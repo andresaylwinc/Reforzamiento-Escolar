@@ -1,17 +1,9 @@
-/* ============================================================
-   config.js — Conexión a la base de datos compartida
-   ------------------------------------------------------------
-   Si dejas los dos valores vacíos, el sistema funciona en modo
-   local (datos de ejemplo, sin cuentas).
-   Para pasar a modo en uso, pega aquí los datos de tu proyecto
-   de Supabase y vuelve a generar el archivo:
-
-     supabaseUrl: https://TU-PROYECTO.supabase.co
-     supabaseKey: la clave "anon public" (Settings → API)
-
-   La clave anon es pública: está hecha para ir en el navegador.
-   Lo que protege los datos son las reglas de la base (RLS).
-   ============================================================ */
+/* config.js ? Conexi?n a la base de datos compartida
+   Proyecto: tkrjwusyvoseialpviyd.supabase.co
+   La clave es p?blica (va en el navegador); lo que protege los datos
+   son las reglas de acceso de la base (RLS). Nunca poner aqu? la
+   clave secreta (service_role / sb_secret_).
+   Para volver al modo demo, deja los dos valores vac?os. */
 window.CONFIG = {
   supabaseUrl: 'https://tkrjwusyvoseialpviyd.supabase.co',
   supabaseKey: 'sb_publishable_Do-rtSCkzxPDjVtw28I_Jg_YkiFf0x3',

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F3B57">
+<title>Reforzamiento · Registro de clases</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">R</span>
+      <div>Reforzamiento<small>Asistencia y evaluación</small></div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" role="tab" data-view="registrar" aria-selected="true"><span class="ic" aria-hidden="true">✎</span>Registrar</button>
+      <button class="tab" role="tab" data-view="panel"><span class="ic" aria-hidden="true">▤</span>Panel</button>
+      <button class="tab" role="tab" data-view="estudiantes"><span class="ic" aria-hidden="true">☺</span>Estudiantes</button>
+      <button class="tab" role="tab" data-view="informes"><span class="ic" aria-hidden="true">⇩</span>Informes</button>
+      <button class="tab" role="tab" data-view="ajustes"><span class="ic" aria-hidden="true">⚙</span>Ajustes</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="view on" id="view-registrar" role="tabpanel" aria-label="Registrar clase"></section>
+  <section class="view" id="view-panel" role="tabpanel" aria-label="Panel de la líder"></section>
+  <section class="view" id="view-estudiantes" role="tabpanel" aria-label="Estudiantes"></section>
+  <section class="view" id="view-informes" role="tabpanel" aria-label="Informes"></section>
+  <section class="view" id="view-ajustes" role="tabpanel" aria-label="Ajustes"></section>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div class="modal-bg" id="modal-bg"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>
+
+<script src="xlsx-lite.js"></script>
+<script src="demo.js"></script>
+<script src="logic.js"></script>
+<script src="report.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

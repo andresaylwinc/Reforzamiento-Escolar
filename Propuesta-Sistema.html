@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Propuesta · Sistema de registro para el reforzamiento escolar</title>
+<style>
+  @page { size: A4; margin: 17mm 15mm 16mm; }
+  :root{
+    --ink:#16232E; --muted:#5B6B7A; --line:#DCE3EA; --soft:#F2F5F7;
+    --navy:#1F3B57; --green:#2F6F4E; --red:#B42318; --amber:#8A5A0B;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--ink); background:#fff;
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    font-size:10.6pt; line-height:1.55;
+  }
+  .doc{max-width:185mm;margin:0 auto;padding:8mm 0 0}
+  h1{font-size:24pt;line-height:1.15;letter-spacing:-.02em;margin:0 0 6pt;color:var(--navy)}
+  h2{font-size:14.5pt;margin:22pt 0 8pt;letter-spacing:-.01em;color:var(--navy);
+     border-top:2px solid var(--navy);padding-top:8pt;break-after:avoid}
+  h3{font-size:11.4pt;margin:14pt 0 4pt;break-after:avoid}
+  p{margin:0 0 7pt}
+  ul,ol{margin:0 0 8pt;padding-left:16pt}
+  li{margin-bottom:3pt}
+  small{font-size:9pt;color:var(--muted)}
+  .kicker{font-size:9pt;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .lead{font-size:12pt;line-height:1.5;color:#243444}
+  .meta{display:flex;gap:14pt;flex-wrap:wrap;font-size:9pt;color:var(--muted);margin:10pt 0 0;
+        border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:7pt 0}
+  .box{border:1px solid var(--line);border-left:4px solid var(--navy);background:#FAFCFD;padding:10pt 12pt;margin:10pt 0;break-inside:avoid}
+  .box.ok{border-left-color:var(--green);background:#F6FBF8}
+  .box.warn{border-left-color:var(--amber);background:#FDF9F0}
+  .box.red{border-left-color:var(--red);background:#FEF7F6}
+  .box p:last-child{margin-bottom:0}
+  .box .t{font-weight:700;display:block;margin-bottom:3pt}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:12pt}
+  table{width:100%;border-collapse:collapse;font-size:9.3pt;margin:8pt 0 12pt;break-inside:avoid}
+  th{text-align:left;background:var(--navy);color:#fff;padding:6pt 7pt;font-weight:600;font-size:9pt}
+  td{padding:5.5pt 7pt;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:nth-child(even) td{background:#FBFCFD}
+  .num{width:26pt;text-align:center;font-weight:700;color:var(--navy)}
+  .tag{display:inline-block;font-size:8pt;font-weight:700;padding:1pt 6pt;border-radius:9pt;
+       background:#E8EEF5;color:var(--navy);vertical-align:1pt}
+  .tag.hi{background:#FDEBE9;color:#8C1D14}
+  .tag.mid{background:#FBF1DE;color:#6E4A08}
+  .tag.ok{background:#E4F1EA;color:#245741}
+  figure{margin:10pt 0 14pt;break-inside:avoid}
+  figure img{width:100%;border:1px solid var(--line);border-radius:6pt;display:block}
+  figcaption{font-size:8.6pt;color:var(--muted);margin-top:4pt}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10pt}
+  .two img{width:100%;border:1px solid var(--line);border-radius:6pt}
+  .cover{min-height:212mm;display:flex;flex-direction:column;justify-content:center}
+  .cover .rule{height:4pt;background:var(--navy);width:60mm;margin:0 0 14pt}
+  .cover h1{font-size:30pt;max-width:150mm}
+  .cover .sub{font-size:13pt;color:var(--muted);max-width:150mm;margin-top:10pt;line-height:1.45}
+  .cover .meta{margin-top:22pt;border:0;border-top:1px solid var(--line);padding-top:8pt;display:grid;grid-template-columns:1fr 1fr;gap:5pt 16pt}
+  .cover .meta span:last-child{grid-column:1 / -1}
+  .pagebreak{break-before:page}
+  .avoid{break-inside:avoid}
+  .foot{margin-top:18pt;border-top:1px solid var(--line);padding-top:7pt;font-size:8.6pt;color:var(--muted)}
+  ol.steps{counter-reset:s;list-style:none;padding-left:0}
+  ol.steps li{counter-increment:s;position:relative;padding-left:22pt;margin-bottom:8pt}
+  ol.steps li:before{content:counter(s);position:absolute;left:0;top:0;width:15pt;height:15pt;border-radius:4pt;
+    background:var(--navy);color:#fff;font-size:8.5pt;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .sig{display:grid;grid-template-columns:1fr 1fr;gap:20pt;margin-top:16pt}
+  .sig div{border-top:1px solid #9AA8B5;padding-top:4pt;font-size:8.6pt;color:var(--muted)}
+  a{color:#24507A}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- ============================ PORTADA ============================ -->
+<section class="cover">
+  <div class="kicker">Documento de trabajo · Propuesta de diseño</div>
+  <div class="rule"></div>
+  <h1>Registro de asistencia y evaluación del reforzamiento escolar</h1>
+  <p class="sub">Comentarios a la propuesta, diez cambios concretos y una forma de implementarlo
+  sin que el equipo vuelva a pelear con el Excel.</p>
+  <div class="meta">
+    <span><strong>Preparado para:</strong> líder del proyecto y equipo de profesores</span>
+    <span><strong>Fecha:</strong> 7 de noviembre de 2026</span>
+    <span><strong>Incluye:</strong> prototipo funcional y Excel de ejemplo</span>
+  </div>
+</section>
+
+<!-- ============================ 1 ============================ -->
+<section class="pagebreak">
+<h2>1. Mi lectura en una página</h2>
+
+<p class="lead">La propuesta está bien encaminada. El diagnóstico es correcto —el problema no es
+el Excel, es que el Excel se usa como pantalla de entrada— y la solución que imaginas respeta
+el lenguaje del equipo: dos secciones, tres bloques, una lista de estudiantes.</p>
+
+<p>No la haría distinta en la forma. La haría distinta en el fondo, en tres cosas:</p>
+
+<ul>
+  <li><strong>El Excel deja de ser el lugar donde se escribe</strong> y pasa a ser una salida
+  que se regenera cuando se necesite. Se mantiene tu idea de "tener todo en Excel", pero sin que
+  nadie tenga que abrir un archivo para registrar una clase.</li>
+  <li><strong>La unidad de registro no es la fila del estudiante, es la clase</strong>. Si el
+  sistema no sabe que "martes 3, Colegio Los Aromos, con la profesora Soto" es una clase única,
+  tarde o temprano habrá dos registros de lo mismo y los porcentajes se distorsionan.</li>
+  <li><strong>La evaluación no puede ser obligatoria para quien no asistió</strong>. Es el cambio
+  con mayor efecto sobre la calidad de los datos, y el que más discusión va a generar. Lo
+  explico en el punto 2.</li>
+</ul>
+
+<div class="box warn">
+  <span class="t">La advertencia que corresponde hacer</span>
+  <p>El éxito de esto no se juega en el panel de la líder ni en el Excel: se juega en que un
+  profesor, de pie en un colegio, con el celular en una mano, termine de registrar una clase de
+  30 estudiantes en menos de dos minutos. Si eso no ocurre, en tres semanas vuelven al Excel.
+  Por eso el prototipo está pensado con atajos ("todos presentes", evaluación con un toque) y
+  no con formularios "correctos pero lentos".</p>
+</div>
+
+<h3>Qué contiene este documento</h3>
+<table>
+  <tr><td class="num">2</td><td>Lo que mantendría igual de tu propuesta.</td></tr>
+  <tr><td class="num">3</td><td>Los diez cambios que propongo, cada uno con el problema que evita.</td></tr>
+  <tr><td class="num">4</td><td>Cómo abordaría el desafío: arquitectura, etapas, costos y cómo medir si funcionó.</td></tr>
+  <tr><td class="num">5</td><td>Las alternativas que evalué y por qué no las recomiendo.</td></tr>
+  <tr><td class="num">6</td><td>Datos de menores: lo que hay que cuidar desde el día uno.</td></tr>
+  <tr><td class="num">7</td><td>Lo que ya está construido y cómo probarlo.</td></tr>
+  <tr><td class="num">8</td><td>Las cinco decisiones que necesito de ti para seguir.</td></tr>
+</table>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section>
+<h2>2. Lo que mantendría sin cambios</h2>
+
+<p>Esto no es cortesía: son decisiones acertadas y conviene no moverlas.</p>
+
+<ul>
+  <li><strong>Dos secciones.</strong> Primero el contexto de la clase, después las personas. Es el
+  orden mental correcto y evita el error clásico de pedir todo en una pantalla gigante.</li>
+  <li><strong>El colegio como selector principal de la lista.</strong> El profesor reconoce su curso
+  por el colegio, no por un código. Bien.</li>
+  <li><strong>Nombre del estudiante no editable.</strong> Correcto: es la única forma de que dos
+  profesores no escriban "Alonso" y "Alonso Pérez F." como si fueran dos personas.</li>
+  <li><strong>A/P y 0-3 con botones, no con texto libre.</strong> Es la razón por la que después se
+  puede graficar. Mantener el rango cerrado.</li>
+  <li><strong>Observación opcional.</strong> Debe seguir siendo opcional. Si la vuelves obligatoria,
+  aparecerán observaciones de relleno ("sin novedad") y se pierde el valor cualitativo.</li>
+  <li><strong>Un botón de enviar.</strong> En el prototipo lo mantuve, aunque además la información
+  queda a salvo mientras se escribe (ver punto 3.10).</li>
+  <li><strong>Una hoja por colegio.</strong> Es la vista que la líder va a leer de verdad. La mantuve
+  y le agregué compañía (ver punto 3.7).</li>
+</ul>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section>
+<h2>3. Los diez cambios que propongo</h2>
+<p>Están ordenados por impacto. Los cuatro primeros son de modelo de datos: si no se corrigen
+antes de cargar información real, después cuesta mucho arreglarlos. Los cuatro siguientes son de
+uso. Los dos últimos, de operación.</p>
+
+<h3>3.1 · Registrar la clase como una entidad, no como filas sueltas</h3>
+<p><strong>Qué pasa si no se cambia:</strong> la profesora Soto registra el martes. El jueves
+recuerda que se equivocó en dos notas y vuelve a enviar todo. Ahora hay dos juegos de filas para la
+misma clase: la asistencia del mes se calcula sobre el doble de registros y el porcentaje queda mal,
+sin que nadie lo note.</p>
+<p><strong>Qué propongo:</strong> que cada envío cree —o actualice— <em>una clase</em> identificada
+por fecha, colegio y profesor. La regla es simple: <em>una clase por colegio y fecha</em>. Si ya
+existe, el sistema avisa "esta clase ya estaba registrada" y muestra lo guardado para corregir, en
+lugar de agregar filas nuevas. En el prototipo ya funciona así: se puede reenviar veinte veces y
+sigue habiendo un solo registro.</p>
+
+<h3>3.2 · La evaluación se exige al que está presente, no al que faltó</h3>
+<p><strong>Qué pasa si no se cambia:</strong> el estudiante no vino. El formulario exige una
+evaluación de 0 a 3. El profesor tiene tres caminos: dejar 0 (y el promedio del curso se hunde por
+una inasistencia, no por aprendizaje), poner 3 al azar (y se infla), o no enviar. Los tres son
+malos. Los datos quedan contaminados justo en los estudiantes que más interesa mirar: los que
+faltan.</p>
+<p><strong>Qué propongo:</strong> evaluación obligatoria <em>solo si el estudiante está presente</em>.
+Si se marca "A", el selector se apaga y el dato queda como "no aplica". La asistencia sigue siendo
+obligatoria para todos, y la evaluación sigue siendo obligatoria para todos los presentes: no se
+pierde la exigencia que pediste, se elimina el dato inventado.</p>
+<div class="box ok">
+  <span class="t">Por qué esto importa más de lo que parece</span>
+  <p>Si el 15% de los registros son ausencias y todas llevan un 0 "de trámite", tu promedio general
+  baja alrededor de 0,3 puntos sin que haya cambiado nada en la enseñanza. Y cuando quieras comparar
+  dos colegios, estarás comparando niveles de inasistencia disfrazados de nivel de aprendizaje.</p>
+</div>
+
+<h3>3.3 · Poder registrar que la clase no se realizó</h3>
+<p><strong>Qué pasa si no se cambia:</strong> hubo feriado, el colegio tenía acto, la profesora
+estuvo con licencia. Alguien marca a los 30 estudiantes como ausentes —o no registra nada—. En el
+primer caso, la asistencia del mes se cae por una causa que no es de los niños; en el segundo, la
+líder no puede distinguir "no hubo clases" de "nadie registró".</p>
+<p><strong>Qué propongo:</strong> una casilla "clase no realizada" con motivo (feriado, actividad del
+colegio, profesor ausente, otro). Esa clase no cuenta como ausencia de nadie, no entra en los
+promedios y aparece en el informe como clase suspendida. Son dos clics y evita un mes de datos
+inservibles.</p>
+
+<h3>3.4 · El curso no es el colegio</h3>
+<p><strong>Qué pasa si no se cambia:</strong> el desplegable de colegio funciona mientras cada colegio
+tenga un solo curso de reforzamiento. El día que el Colegio Los Aromos abra 5° A y 5° B —o que el
+reforzamiento se haga con dos niveles— la lista se mezcla y el informe por curso deja de existir.</p>
+<p><strong>Qué propongo:</strong> que el colegio tenga uno o más cursos, y que el estudiante pertenezca
+a un curso. <strong>Ya está implementado:</strong> la clase se registra por curso (fecha + curso), la
+pantalla agrega un selector de curso y la hoja de cada colegio trae un bloque por curso, porque dos
+cursos del mismo colegio pueden tener clases en fechas distintas.</p>
+
+<h3>3.5 · Los estudiantes entran y salen: fechas, no borrados</h3>
+<p><strong>Qué pasa si no se cambia:</strong> llega un estudiante nuevo en octubre. Si se agrega a la
+lista, aparece con cero en las clases de agosto y septiembre, y su porcentaje de asistencia queda
+castigado por clases a las que nunca fue invitado. Si se borra a quien se retira, se pierde su
+historial y los totales de meses anteriores dejan de cuadrar.</p>
+<p><strong>Qué propongo:</strong> fecha de ingreso y fecha de egreso. El sistema muestra a cada
+estudiante solo en las clases en que estaba vigente, y conserva todo su historial. En el prototipo
+hay dos estudiantes que ingresan a mitad de periodo y una que egresa: se ve en la planilla y en los
+porcentajes.</p>
+
+<h3>3.6 · El Excel como salida, no como base de datos</h3>
+<p><strong>Qué pasa si no se cambia:</strong> el archivo se comparte por correo o WhatsApp, alguien
+lo abre, ordena una columna, borra una fila "que estaba repetida", y desde ese momento hay dos
+verdades. Es exactamente el problema que ya conocen.</p>
+<p><strong>Qué propongo:</strong> que el sistema sea la única fuente y que el Excel se descargue
+siempre completo y ordenado ("descargar Excel" en cualquier momento, con el periodo que se elija).
+Si la líder quiere trabajar a mano, copia las hojas a un archivo nuevo; el original se regenera.
+En el prototipo el botón está en el panel y en informes.</p>
+
+<h3>3.7 · La hoja por colegio necesita una hermana "plana"</h3>
+<p><strong>Qué pasa si no se cambia:</strong> una hoja por colegio en formato ancho —estudiantes en
+filas, fechas en columnas— es perfecta para leer y muy mala para analizar: cuando entra un estudiante
+o se agrega una fecha, las tablas dinámicas y los gráficos se desarman. Además no permite cruzar
+por profesor, por curso o por mes.</p>
+<p><strong>Qué propongo:</strong> mantener la hoja por colegio como "libro de clases" (es la que se
+lee) y agregar una hoja <em>Registro</em> con una fila por estudiante y por clase. Esa hoja es la
+que permite tablas dinámicas, gráficos y cruces sin depender de la forma de la planilla. En el
+Excel de ejemplo están las dos, más un resumen y un diccionario de códigos.</p>
+
+<h3>3.8 · Observación libre, con una etiqueta opcional</h3>
+<p><strong>Qué pasa si no se cambia:</strong> cien observaciones en texto libre son un tesoro para
+leer y un desierto para analizar. La líder termina citando tres frases en el informe porque no
+puede agrupar el resto.</p>
+<p><strong>Qué propongo:</strong> mantener el cuadro de texto tal como lo pediste (es donde aparece
+lo que ningún formulario captura) y ofrecer, solo cuando se abre, unas etiquetas de un toque:
+comprensión lectora, cálculo, participación, conducta, motivación, asistencia irregular, apoyo
+familiar, logro destacado. Nadie está obligado a usarlas; quien las usa permite después decir
+"de 40 observaciones, 18 son de comprensión lectora".</p>
+
+<h3>3.9 · Decir qué significa 0, 1, 2 y 3</h3>
+<p><strong>Qué pasa si no se cambia:</strong> cada profesor interpreta la escala a su manera. Un "2"
+de la profesora Soto no significa lo mismo que un "2" del profesor Fuentes, y el promedio del curso
+mezcla dos reglas distintas.</p>
+<p><strong>Qué propongo:</strong> una leyenda de cuatro líneas acordada por el equipo, visible al
+pasar el mouse o en el diccionario del Excel. Una versión razonable:
+<strong>0</strong> no logra el objetivo de la sesión; <strong>1</strong> lo intenta con apoyo
+permanente; <strong>2</strong> lo logra con apoyo puntual; <strong>3</strong> lo logra de forma
+autónoma. No cambia la pantalla, cambia lo que significan los números.</p>
+
+<h3>3.10 · Roles, corrección con historial y funcionamiento sin internet</h3>
+<p><strong>Qué pasa si no se cambia:</strong> cualquiera puede editar cualquier cosa y no hay forma
+de saber quién cambió una nota. Y en los colegios el wifi falla justo cuando hay que registrar.</p>
+<p><strong>Qué propongo:</strong> tres reglas simples.</p>
+<ul>
+  <li><strong>Acceso por rol.</strong> Cada profesor ve sus colegios; la líder ve todo. Entrada con un
+  enlace o un código de cuatro dígitos, sin claves que se olvidan.</li>
+  <li><strong>Corrección con ventana.</strong> El profesor puede corregir su clase durante la semana;
+  pasado ese plazo, solo la líder. Cada registro guarda quién y cuándo lo cambió por última vez.</li>
+  <li><strong>Sin conexión.</strong> La app funciona en el celular sin señal y envía cuando vuelve el
+  wifi. Esto es más importante de lo que parece: si el profesor pierde lo que escribió, no lo
+  vuelve a escribir.</li>
+</ul>
+</section>
+
+<!-- ============================ 3b tabla ============================ -->
+<section>
+<div class="box red">
+  <span class="t">Tres propuestas no se aplicaron (decisión del equipo, 7 de noviembre)</span>
+  <p><strong>3.2 Evaluación solo al presente.</strong> En el modelo del proyecto el <strong>0 no es una
+  nota</strong>: es el registro de que no hubo evaluación. Por eso la evaluación se pide siempre, para
+  presentes y ausentes, y el 0 es un valor válido. El promedio se calcula solo con los niveles 1 a 3 y
+  los ceros se informan aparte como "sin nota".</p>
+  <p><strong>3.5 Fechas de ingreso y egreso.</strong> La lista del curso es la lista vigente: quien se
+  integra se agrega en ese momento y aparece en las clases siguientes. No se reconstruye la composición
+  histórica del curso.</p>
+  <p><strong>3.9 Leyenda de la escala.</strong> El equipo se reúne cada semana y conoce el significado de
+  los niveles; no se agrega leyenda ni editor de rúbrica en esta fase.</p>
+  <p>Quedan anotadas para retomarlas más adelante, cuando el proyecto lo permita.</p>
+</div>
+
+<h3>Resumen de los cambios</h3>
+<table>
+  <tr><th>Cambio</th><th>Problema que evita</th><th>Esfuerzo</th></tr>
+  <tr><td>3.1 Clase como entidad</td><td>Registros duplicados y porcentajes inflados</td><td><span class="tag ok">Bajo</span></td></tr>
+  <tr><td>3.2 Evaluación solo al presente</td><td>—</td><td><span class="tag hi">No aplicado</span></td></tr>
+  <tr><td>3.3 Clase no realizada</td><td>Asistencia hundida por feriados o licencias</td><td><span class="tag ok">Bajo</span></td></tr>
+  <tr><td>3.4 Curso dentro del colegio</td><td>Mezcla de niveles cuando un colegio tiene dos cursos</td><td><span class="tag mid">Medio</span></td></tr>
+  <tr><td>3.5 Ingreso y egreso</td><td>—</td><td><span class="tag hi">No aplicado</span></td></tr>
+  <tr><td>3.6 Excel como salida</td><td>Versiones paralelas del mismo archivo</td><td><span class="tag mid">Medio</span></td></tr>
+  <tr><td>3.7 Hoja plana + hoja por colegio</td><td>Tablas dinámicas que se rompen al cambiar el curso</td><td><span class="tag ok">Bajo</span></td></tr>
+  <tr><td>3.8 Etiquetas opcionales</td><td>Observaciones que no se pueden agrupar</td><td><span class="tag ok">Bajo</span></td></tr>
+  <tr><td>3.9 Leyenda 0-3</td><td>—</td><td><span class="tag hi">No aplicado</span></td></tr>
+  <tr><td>3.10 Roles, historial, sin conexión</td><td>Ediciones sin rastro; pérdida de registros</td><td><span class="tag hi">Alto</span></td></tr>
+</table>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section class="pagebreak">
+<h2>4. Cómo abordaría el desafío</h2>
+
+<h3>4.1 · Cuatro piezas, y cada una con una dueña clara</h3>
+<table>
+  <tr><th>Pieza</th><th>Qué hace</th><th>Quién la usa</th></tr>
+  <tr><td><strong>App de registro</strong></td><td>Pantalla de dos secciones. Funciona en celular y computador, con o sin internet.</td><td>Profesores</td></tr>
+  <tr><td><strong>Base de datos</strong></td><td>Guarda cada clase y cada estudiante una sola vez. Es la fuente de verdad.</td><td>—</td></tr>
+  <tr><td><strong>Panel e informes</strong></td><td>Indicadores, alertas, observaciones y borrador de informe.</td><td>Líder</td></tr>
+  <tr><td><strong>Exportador Excel</strong></td><td>Genera el archivo con una hoja por colegio, la hoja plana y el resumen.</td><td>Líder (y quien ella autorice)</td></tr>
+</table>
+
+<h3>4.2 · Con qué lo construiría</h3>
+<p>Una aplicación web, sin instalar nada: se abre desde un enlace en cualquier celular o computador.
+Base de datos en la nube con respaldo automático y permisos por rol (por ejemplo Supabase, que es
+PostgreSQL administrado, o un servidor equivalente). El Excel se arma en el mismo servidor para que
+las hojas salgan siempre iguales.</p>
+<p>Lo que <em>no</em> haría: una app para descargar de la tienda (nadie la instala, y cada
+actualización depende de que todos actualicen), ni una planilla de Google compartida (vuelve al
+problema inicial), ni un desarrollo "a medida" con login y menús complejos (la mitad del equipo no
+los va a usar).</p>
+
+<h3>4.3 · Modelo de datos (seis tablas)</h3>
+<table>
+  <tr><th>Tabla</th><th>Campos principales</th></tr>
+  <tr><td><code>colegios</code></td><td>id, nombre, curso(s), comuna</td></tr>
+  <tr><td><code>profesores</code></td><td>id, nombre, rol, acceso</td></tr>
+  <tr><td><code>asignaciones</code></td><td>profesor_id, colegio_id, desde, hasta</td></tr>
+  <tr><td><code>estudiantes</code></td><td>id, nombre, colegio_id, curso, ingreso, egreso</td></tr>
+  <tr><td><code>clases</code></td><td>id, fecha, colegio_id, profesor_id, realizada, motivo</td></tr>
+  <tr><td><code>registros</code></td><td>clase_id, estudiante_id, asistencia, evaluación, observación, etiquetas, quién y cuándo</td></tr>
+</table>
+<p>La clave está en una restricción única sobre <code>(clase_id, estudiante_id)</code>: la base de
+datos misma impide duplicar a un estudiante en una clase, aunque dos profesores envíen al mismo
+tiempo. Es la diferencia entre "confiar en que la app valide" y "que sea imposible".</p>
+
+<h3>4.4 · Por etapas</h3>
+<table>
+  <tr><th>Etapa</th><th>Duración</th><th>Qué queda funcionando</th></tr>
+  <tr><td><strong>0 · Prueba con lápiz</strong></td><td>1 a 2 semanas</td><td>Dos profesores registran dos clases reales con el prototipo. Se ajustan campos, tiempos y textos. Se acuerda la leyenda 0-3.</td></tr>
+  <tr><td><strong>1 · Versión usable</strong></td><td>3 a 4 semanas</td><td>App online con acceso por rol, registro de clases, panel y Excel. Carga inicial de colegios, profesores y estudiantes.</td></tr>
+  <tr><td><strong>2 · Informes</strong></td><td>2 semanas</td><td>Informe en Word o PDF con los números y las observaciones ya redactados; alertas por correo; historial de cambios.</td></tr>
+  <tr><td><strong>3 · Crecimiento</strong></td><td>según necesidad</td><td>Más de un curso por colegio, varias comunas, evidencias fotográficas, carga masiva de estudiantes desde una planilla.</td></tr>
+</table>
+<p><small>Las duraciones suponen dedicación continua y las decisiones del punto 8 tomadas al inicio.
+La etapa 0 es la más importante y la que más se suele saltar.</small></p>
+
+<h3>4.5 · Costos de operación</h3>
+<table>
+  <tr><th>Ítem</th><th>Estimación</th><th>Comentario</th></tr>
+  <tr><td>Hosting y base de datos</td><td>US$0 a 25 al mes</td><td>Con 6 colegios y 45 estudiantes, el plan gratuito o el más bajo alcanza. Crece con el uso.</td></tr>
+  <tr><td>Dominio</td><td>US$12 a 20 al año</td><td>Opcional: se puede usar el enlace del proveedor.</td></tr>
+  <tr><td>Correo transaccional</td><td>US$0 a 10 al mes</td><td>Solo si se envían alertas o informes por correo.</td></tr>
+  <tr><td>Licencias por usuario</td><td>US$0</td><td>Una ventaja frente a las plataformas tipo Airtable o Glide, que cobran por persona.</td></tr>
+</table>
+<p>En régimen, el sistema cuesta menos que una licencia mensual de las alternativas "sin código" para
+cinco usuarios.</p>
+
+<h3>4.6 · Cómo sabremos si funcionó</h3>
+<ul>
+  <li><strong>Tiempo de registro</strong> por clase: meta, menos de 2 minutos para 30 estudiantes.</li>
+  <li><strong>Registro el mismo día:</strong> porcentaje de clases registradas el día en que ocurrieron.
+  Bajo 70%, algo en la pantalla está estorbando.</li>
+  <li><strong>Cobertura:</strong> clases registradas sobre clases esperadas por semana y colegio.</li>
+  <li><strong>Observaciones:</strong> porcentaje de registros con al menos una observación (no debería
+  ser 100%, ni 2%).</li>
+  <li><strong>Uso del panel:</strong> si la líder lo abre menos de una vez por semana, el panel está
+  de más y hay que rehacerlo.</li>
+</ul>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section class="pagebreak">
+<h2>5. Alternativas que evalué</h2>
+<p>Las comparé con el mismo criterio: que un profesor pueda registrar en dos minutos, que el Excel
+salga como tú lo pediste y que no haya que editar el archivo a mano.</p>
+
+<table>
+  <tr><th>Alternativa</th><th>Costo</th><th>Tiempo</th><th>Donde falla</th><th>Veredicto</th></tr>
+  <tr>
+    <td><strong>Google Forms + Sheets</strong></td>
+    <td>Casi cero</td><td>Un día</td>
+    <td>Un formulario produce <em>una</em> respuesta por envío: no se puede registrar 30 estudiantes
+    con A/P y nota en una sola pantalla. Corregir obliga a editar la planilla. Sin control de duplicados.</td>
+    <td><span class="tag hi">No sirve</span></td>
+  </tr>
+  <tr>
+    <td><strong>Excel con listas y macros</strong></td>
+    <td>Cero</td><td>Una semana</td>
+    <td>Es el punto de partida: el problema es la adopción, no la herramienta. Las macros se rompen
+    al copiar el archivo y no funcionan en el celular.</td>
+    <td><span class="tag hi">No resuelve</span></td>
+  </tr>
+  <tr>
+    <td><strong>Airtable / Glide / AppSheet</strong></td>
+    <td>US$10 a 25 por usuario al mes</td><td>Dos semanas</td>
+    <td>Rápido para partir, pero el costo crece con cada profesor, la exportación a Excel queda
+    "parecida" y no exacta, y la información queda en un tercero.</td>
+    <td><span class="tag mid">Plan B</span></td>
+  </tr>
+  <tr>
+    <td><strong>App web a medida</strong></td>
+    <td>Hosting bajo, desarrollo inicial</td><td>4 a 6 semanas</td>
+    <td>Nada relevante, salvo que exige mantenerla. A cambio, el Excel sale exactamente como se
+    necesita y no se paga por usuario.</td>
+    <td><span class="tag ok">Recomendada</span></td>
+  </tr>
+</table>
+
+<p>Hay un caso intermedio que vale la pena considerar si la urgencia es alta: partir con Airtable o
+Glide durante dos meses para validar el flujo con los profesores, y construir la versión definitiva
+con lo aprendido. El riesgo es que "provisorio" dure dos años.</p>
+</section>
+
+<!-- ============================ 6 ============================ -->
+<section>
+<h2>6. Datos de menores: lo que hay que cuidar desde el día uno</h2>
+<p>Esto no es un trámite. Son nombres de niños, su asistencia y observaciones que pueden ser
+sensibles ("apoyo familiar", "conducta", "asistencia irregular"). Un archivo con eso, circulando por
+WhatsApp, es un problema para el proyecto y para el colegio.</p>
+
+<ul>
+  <li><strong>Recoger lo mínimo.</strong> Nombre, curso y colegio bastan. El RUT no es necesario para
+  el objetivo del sistema; si se usa, que sea con una razón concreta.</li>
+  <li><strong>Acceso por rol y por colegio.</strong> Un profesor no necesita ver las observaciones de
+  otro colegio. La líder sí.</li>
+  <li><strong>Rastro de cambios.</strong> Saber quién modificó una nota y cuándo, no para vigilar,
+  sino para poder responder si un apoderado pregunta.</li>
+  <li><strong>El Excel también es dato sensible.</strong> Que no quede en escritorios compartidos ni
+  en grupos de mensajería; que se descargue cuando se necesita y se guarde en un lugar con acceso.</li>
+  <li><strong>Marco legal.</strong> Chile está estrenando un nuevo régimen de protección de datos
+  personales (Ley 21.719, que crea la Agencia de Protección de Datos y refuerza las reglas sobre
+  datos de niños, niñas y adolescentes). Su entrada en vigencia fue postergada, lo que da una
+  ventana para llegar preparados en lugar de improvisar. Conviene una cláusula simple con cada
+  colegio: para qué se usan los datos, quién accede y cuánto se conservan.
+  <br><small>Referencias: <a href="https://fycom.cl/es/nueva-ley-de-proteccion-de-datos-modificaciones-y-postergacion-de-entrada-en-vigencia/">Fischer y Cía. — postergación de la entrada en vigencia</a> ·
+  <a href="https://www.bcn.cl/obtienearchivo?id=repositorio/10221/37372/1/Informe_BCN_Acceso_informacion_NNA_VF.pdf">Biblioteca del Congreso — datos de NNA</a></small></li>
+</ul>
+<div class="box">
+  <span class="t">Una regla práctica</span>
+  <p>Antes de agregar un campo, preguntarse: ¿qué decisión se toma con este dato? Si la respuesta es
+  "ninguna", no se pide. Es la forma más simple de cumplir con proporcionalidad y de mantener la
+  pantalla rápida.</p>
+</div>
+</section>
+
+<!-- ============================ 7 ============================ -->
+<section class="pagebreak">
+<h2>7. Lo que ya está construido</h2>
+<p>Para no discutir sobre un dibujo, armé un prototipo funcional con datos de ejemplo: seis colegios,
+siete profesores, 45 estudiantes y diez semanas de clases (424 registros). Se abre con doble clic,
+no requiere instalación ni internet, y permite registrar, corregir, mirar el panel y descargar el
+Excel real.</p>
+
+<figure>
+  <img src="Ejemplos/capturas/01-registrar-escritorio.png" alt="Pantalla de registro">
+  <figcaption><strong>Registro de una clase.</strong> Fecha, profesor y colegio arriba; la lista del
+  curso abajo con Asistencia, Evaluación y Observación. Las columnas están rotuladas, el contador
+  indica cuántos faltan y el botón avisa si queda una evaluación pendiente.</figcaption>
+</figure>
+
+<div class="two">
+  <figure>
+    <img src="Ejemplos/capturas/06-registrar-movil.png" alt="Registro en celular">
+    <figcaption><strong>En el celular.</strong> Los mismos tres campos por estudiante, con botones
+    grandes. Es la pantalla que realmente se va a usar en el colegio.</figcaption>
+  </figure>
+  <figure>
+    <img src="Ejemplos/capturas/02-panel-escritorio.png" alt="Panel de la líder">
+    <figcaption><strong>Panel de la líder.</strong> Asistencia, evaluación, sesiones y alertas;
+    evolución semanal, distribución y comparación entre colegios.</figcaption>
+  </figure>
+</div>
+
+<h3>El Excel que genera</h3>
+<p>El archivo de ejemplo (<code>Ejemplos/Informe-Ejemplo.xlsx</code>) tiene once hojas:</p>
+<table>
+  <tr><th>Hoja</th><th>Para qué</th></tr>
+  <tr><td><strong>Resumen</strong></td><td>Indicadores del periodo, comparación por colegio, desempeño por profesor y estudiantes en seguimiento.</td></tr>
+  <tr><td><strong>Una por colegio</strong> (6)</td><td>Libro de clases: estudiantes en filas, fechas en columnas, celda "P · 3"; a la derecha, asistencia, promedio y última observación.</td></tr>
+  <tr><td><strong>Registro</strong></td><td>Una fila por estudiante y clase, con filtros: es la hoja para tablas dinámicas y gráficos.</td></tr>
+  <tr><td><strong>Observaciones</strong></td><td>Todo el texto cualitativo con fecha, colegio, profesor y etiqueta.</td></tr>
+  <tr><td><strong>Estudiantes</strong></td><td>Nómina con ingreso, egreso y porcentajes individuales.</td></tr>
+  <tr><td><strong>Diccionario</strong></td><td>Qué significa cada código y cómo usar el archivo.</td></tr>
+</table>
+
+<h3>Qué hace y qué le falta</h3>
+<div class="cols">
+  <div>
+    <p><strong>Ya funciona</strong></p>
+    <ul>
+      <li>Registro por curso, con varios cursos por colegio.</li>
+      <li>Validaciones y sin duplicados.</li>
+      <li>Corrección de una clase ya enviada.</li>
+      <li>Clase no realizada con motivo.</li>
+      <li>Estudiantes que ingresan y egresan.</li>
+      <li>Panel con indicadores, gráficos y alertas.</li>
+      <li>Borrador de informe narrativo.</li>
+      <li>Excel completo, generado en el navegador.</li>
+      <li>Respaldo y restauración de datos.</li>
+    </ul>
+  </div>
+  <div>
+    <p><strong>Falta para producción</strong></p>
+    <ul>
+      <li>Cuentas de usuario y permisos por rol.</li>
+      <li>Base de datos compartida entre dispositivos.</li>
+      <li>Sincronización sin conexión.</li>
+      <li>Historial de cambios por registro.</li>
+      <li>Carga masiva de estudiantes.</li>
+      <li>Informe en Word o PDF.</li>
+      <li>Respaldo automático programado.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="box ok">
+  <span class="t">Para probarlo</span>
+  <p>1. Abrir <code>Sistema-Asistencia.html</code> (doble clic).<br>
+  2. En "Registrar", elegir un colegio y completar la lista de una clase.<br>
+  3. Presionar "Enviar registro" y luego "Descargar Excel" en el panel.<br>
+  Los datos de ejemplo se pueden restaurar en Ajustes.</p>
+</div>
+</section>
+
+<!-- ============================ 8 ============================ -->
+<section class="pagebreak">
+<h2>8. Decisiones tomadas y lo que queda abierto</h2>
+<p>Estas son las definiciones que ya tenemos y lo que cambia en el sistema con cada una.</p>
+
+<table>
+  <tr><th>Tema</th><th>Decisión</th><th>Efecto en el sistema</th></tr>
+  <tr>
+    <td><strong>Cursos</strong></td>
+    <td>Un colegio tiene varios cursos.</td>
+    <td>La clase se registra por curso y no por colegio: la clave es fecha + curso. La lista de
+    estudiantes se filtra por curso y el informe separa un bloque por curso dentro de la hoja del
+    colegio. <span class="tag ok">Implementado</span></td>
+  </tr>
+  <tr>
+    <td><strong>Escala 0-3</strong></td>
+    <td>El nivel se definirá con otra pauta de evaluación de la clase; se revisa en dos semanas.</td>
+    <td>0 = sin nota; 1, 2 y 3 son los niveles que el equipo define en sus reuniones semanales.
+    No se agrega leyenda ni rúbrica en esta fase. Se retoma cuando llegue la pauta.
+    <span class="tag mid">Sin cambios</span></td>
+  </tr>
+  <tr>
+    <td><strong>Corrección</strong></td>
+    <td>Un mes desde la fecha de la clase.</td>
+    <td>Dentro del mes el profesor corrige y reenvía. Pasado el mes el registro se cierra y solo la
+    líder puede modificarlo. El plazo es configurable en Ajustes.
+    <span class="tag ok">Implementado</span></td>
+  </tr>
+  <tr>
+    <td><strong>Dispositivos</strong></td>
+    <td>Celular y computador, principalmente celular.</td>
+    <td>El registro está pensado para pantalla pequeña: botones grandes, etiquetas por columna y
+    guardado sin conexión en la versión online.
+    <span class="tag mid">Diseñado</span></td>
+  </tr>
+  <tr>
+    <td><strong>Dónde se guardan los datos</strong></td>
+    <td>Repositorio en GitHub.</td>
+    <td>GitHub guarda el <em>código</em>; los datos de estudiantes necesitan una base de datos.
+    Ver la advertencia siguiente. <span class="tag hi">Por definir</span></td>
+  </tr>
+</table>
+
+<div class="box warn">
+  <span class="t">Sobre GitHub: el código y los datos son dos cosas distintas</span>
+  <p>Un repositorio de GitHub es un lugar excelente para <strong>el programa</strong>: guarda versiones,
+  permite revisar cambios y publicar la app para que se abra desde un enlace (GitHub Pages). No sirve,
+  en cambio, como lugar donde el sistema <em>escriba</em> la asistencia: para grabar desde la app habría
+  que poner una llave de escritura en el navegador, cualquier persona podría leerla, dos profesores
+  chocarían al guardar al mismo tiempo y cada registro quedaría en el historial público del repositorio.
+  Además, un porcentaje de asistencia de un menor no debería vivir en un historial de commits.</p>
+  <p>Lo que sí funciona bien: el repositorio guarda el código y la base de datos vive aparte, en un
+  servicio con respaldo y permisos (por ejemplo Supabase, que es PostgreSQL administrado y tiene plan
+  gratuito suficiente para 6 colegios y 45 estudiantes). La app que está en GitHub se conecta a esa
+  base con una clave pública y reglas de acceso por rol. El Excel se sigue generando desde ahí.</p>
+</div>
+
+<h3>Lo que queda por definir</h3>
+<ol>
+  <li><strong>La pauta de evaluación</strong> que definirá cada nivel 0-3. En dos semanas, con el
+  sistema ya probado, se revisa si la escala única basta o si la pauta pide más de un criterio por clase.</li>
+  <li><strong>El servicio de base de datos</strong> (y quién administra la cuenta y los respaldos).</li>
+  <li><strong>El alcance del acceso</strong>: si los colegios verán algo o si el sistema queda solo para
+  el equipo del proyecto.</li>
+</ol>
+
+<h3>Mi recomendación de próximo paso</h3>
+<p>Probar la versión actual con dos profesores y dos cursos reales durante dos semanas, en paralelo a la
+definición de la pauta. En esa prueba se mira cuánto demoran, qué campos estorban y qué preguntan.
+Después de eso se conecta la base de datos: es la parte que más conviene construir una sola vez y con
+la pantalla ya validada.</p>
+
+<div class="sig">
+  <div>Preparado por</div>
+  <div>Revisado por la líder del proyecto</div>
+</div>
+
+<p class="foot">Este documento acompaña a <code>Sistema-Asistencia.html</code> (prototipo) y
+<code>Ejemplos/Informe-Ejemplo.xlsx</code> (informe de ejemplo con datos ficticios). Los nombres son genéricos
+(Colegio 1, Profesor 1, Estudiante 1) y no corresponden a personas ni establecimientos reales.</p>
+</section>
+
+</div>
+</body>
+</html>

@@ -363,7 +363,7 @@
     if (!sesion) {
       nuevo = true;
       sesion = {
-        id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        id: payload.id || ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
         fecha: fecha,
         colegioId: payload.colegioId,
         cursoId: payload.cursoId,

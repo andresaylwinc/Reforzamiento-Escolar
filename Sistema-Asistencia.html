@@ -370,6 +370,22 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
 
 .obs-dot{display:block;font-size:10.5px;font-weight:600;color:var(--accent);letter-spacing:.02em}
 
+/* ------------------------- entrada al sistema ---------------------- */
+body.sin-tabs .tabs{display:none}
+body.sin-tabs{padding-bottom:0}
+#view-login.on{display:flex;align-items:center;justify-content:center;min-height:72vh}
+.login-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px 26px;
+  box-shadow:var(--shadow);max-width:400px;width:100%}
+.userbox{display:flex;align-items:center;gap:8px;margin-left:10px;padding-left:12px;border-left:1px solid var(--line)}
+.userbox .uname{font-size:12.5px;font-weight:600;color:var(--muted);max-width:130px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.userbox .pend{font-size:11px;font-weight:700;color:var(--danger);background:var(--danger-soft);
+  padding:2px 7px;border-radius:999px}
+@media (max-width:720px){
+  .userbox{border:0;padding:0;margin:0}
+  .userbox .uname{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -390,6 +406,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
 </header>
 
 <main>
+  <section class="view" id="view-login" aria-label="Entrar al sistema"></section>
   <section class="view on" id="view-registrar" role="tabpanel" aria-label="Registrar clase"></section>
   <section class="view" id="view-panel" role="tabpanel" aria-label="Panel de la líder"></section>
   <section class="view" id="view-estudiantes" role="tabpanel" aria-label="Estudiantes"></section>
@@ -399,6 +416,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div class="modal-bg" id="modal-bg"><div class="modal" role="dialog" aria-modal="true" id="modal"></div></div>
+
+<script src="config.js"></script>
 
 
 
@@ -1415,7 +1434,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
     if (!sesion) {
       nuevo = true;
       sesion = {
-        id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        id: payload.id || ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
         fecha: fecha,
         colegioId: payload.colegioId,
         cursoId: payload.cursoId,
@@ -1949,6 +1968,372 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
 
 
 /* ============================================================
+   nube.js — Acceso a la base de datos compartida (Supabase).
+   Habla con la API REST (PostgREST) y con Auth usando fetch,
+   sin librerías externas.
+
+   Modelo: se carga una vez todo lo que el usuario puede ver y se
+   trabaja en memoria con la misma estructura que el prototipo.
+   Al guardar una clase se envía al servidor; si no hay conexión,
+   queda en una cola local y se reintenta después.
+   ============================================================ */
+(function (root) {
+  'use strict';
+
+  const CFG = root.CONFIG || {};
+  const params = new URLSearchParams(root.location ? root.location.search : '');
+  const desdeUrl = params.get('api');
+  const urlBase = ((CFG.supabaseUrl && CFG.supabaseUrl.trim()) || (desdeUrl || '')).replace(/\/+$/, '');
+  const clave = ((CFG.supabaseKey && CFG.supabaseKey.trim()) || params.get('anon') || '').trim();
+
+  const K_SESION = 'reforzamiento.sesion';
+  const K_COLA = 'reforzamiento.cola';
+
+  let sesion = leerSesion();
+
+  /* ------------------------- Sesión ---------------------------- */
+  function leerSesion() {
+    try { return JSON.parse(localStorage.getItem(K_SESION) || 'null'); } catch (e) { return null; }
+  }
+  function guardarSesion(s) {
+    sesion = s;
+    try { localStorage.setItem(K_SESION, JSON.stringify(s)); } catch (e) {}
+  }
+  function limpiarSesion() {
+    sesion = null;
+    try { localStorage.removeItem(K_SESION); } catch (e) {}
+  }
+
+  async function asegurar() {
+    if (!sesion) return null;
+    if (Date.now() < (sesion.expira || 0) - 60000) return sesion;
+    try {
+      const r = await fetch(urlBase + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: clave },
+        body: JSON.stringify({ refresh_token: sesion.refresh_token }),
+      });
+      if (!r.ok) throw new Error('refresh');
+      const d = await r.json();
+      guardarSesion(Object.assign({}, sesion, {
+        access_token: d.access_token,
+        refresh_token: d.refresh_token,
+        expira: Date.now() + (d.expires_in || 3600) * 1000,
+      }));
+      return sesion;
+    } catch (e) {
+      limpiarSesion();
+      return null;
+    }
+  }
+
+  async function mensajeError(r) {
+    let detalle = '';
+    try {
+      const d = await r.json();
+      detalle = d.message || d.error_description || d.error || JSON.stringify(d);
+    } catch (e) {
+      detalle = await r.text().catch(function () { return ''; });
+    }
+    if (r.status === 401) return 'La sesión venció. Vuelve a entrar.';
+    if (r.status === 403) return 'No tienes permiso para esa acción.';
+    if (r.status === 409) return 'Ese registro ya existe.';
+    return 'Error ' + r.status + ': ' + String(detalle).slice(0, 160);
+  }
+
+  /* ---------------------- Llamadas a la API -------------------- */
+  async function pedir(ruta, opciones) {
+    opciones = opciones || {};
+    const s = await asegurar();
+    if (!s) throw new Error('La sesión venció. Vuelve a entrar.');
+    const cabeceras = {
+      apikey: clave,
+      Authorization: 'Bearer ' + s.access_token,
+      'Content-Type': 'application/json',
+    };
+    if (opciones.prefer) cabeceras.Prefer = opciones.prefer;
+    const r = await fetch(urlBase + '/rest/v1/' + ruta, {
+      method: opciones.method || 'GET',
+      headers: cabeceras,
+      body: opciones.body === undefined ? undefined : JSON.stringify(opciones.body),
+    });
+    if (!r.ok) throw new Error(await mensajeError(r));
+    if (r.status === 204) return null;
+    const t = await r.text();
+    return t ? JSON.parse(t) : null;
+  }
+
+  async function ingresar(email, pass) {
+    if (!urlBase) throw new Error('Falta configurar la dirección de la base de datos.');
+    const r = await fetch(urlBase + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: clave },
+      body: JSON.stringify({ email: email.trim(), password: pass }),
+    });
+    if (!r.ok) {
+      const t = (await r.text()).toLowerCase();
+      throw new Error(t.indexOf('invalid') >= 0 || t.indexOf('credentials') >= 0
+        ? 'Correo o contraseña incorrectos.'
+        : 'No se pudo entrar. Revisa tu conexión e inténtalo otra vez.');
+    }
+    const d = await r.json();
+    guardarSesion({
+      access_token: d.access_token,
+      refresh_token: d.refresh_token,
+      expira: Date.now() + (d.expires_in || 3600) * 1000,
+      usuario: { id: d.user.id, email: d.user.email },
+    });
+    const perfil = await pedir('perfiles?select=id,nombre,rol,activo&id=eq.' + encodeURIComponent(d.user.id));
+    if (!perfil || !perfil.length) {
+      limpiarSesion();
+      throw new Error('Tu cuenta no tiene perfil en el sistema. Pídele a la líder que la habilite.');
+    }
+    if (perfil[0].activo === false) {
+      limpiarSesion();
+      throw new Error('Tu cuenta está desactivada. Habla con la líder del proyecto.');
+    }
+    guardarSesion(Object.assign({}, sesion, {
+      usuario: { id: d.user.id, email: d.user.email, nombre: perfil[0].nombre, rol: perfil[0].rol },
+    }));
+    return sesion.usuario;
+  }
+
+  async function salir() {
+    const s = sesion;
+    limpiarSesion();
+    if (!s) return;
+    try {
+      await fetch(urlBase + '/auth/v1/logout', {
+        method: 'POST',
+        headers: { apikey: clave, Authorization: 'Bearer ' + s.access_token },
+      });
+    } catch (e) { /* sin conexión: la sesión local ya se borró */ }
+  }
+
+  /** true si ya hay una sesión válida guardada en este navegador. */
+  function haySesion() {
+    return !!sesion && Date.now() < (sesion.expira || 0);
+  }
+
+  function usuario() {
+    return sesion ? sesion.usuario : null;
+  }
+
+  /* ------------------------ Carga inicial ---------------------- */
+  function aCamelClase(c) {
+    return {
+      id: c.id, fecha: c.fecha, colegioId: c.colegio_id, cursoId: c.curso_id,
+      profesorId: c.profesor_id, realizada: c.realizada, motivo: c.motivo || '',
+      registradoPor: c.registrado_por, creadoEn: c.creado_en, actualizadoEn: c.actualizado_en,
+    };
+  }
+  function aCamelRegistro(r) {
+    return {
+      id: r.id, sesionId: r.clase_id, estudianteId: r.estudiante_id,
+      asistencia: r.asistencia, evaluacion: r.evaluacion,
+      observacion: r.observacion || '', etiquetas: r.etiquetas || [],
+      actualizadoEn: r.actualizado_en,
+    };
+  }
+
+  /** Trae todo lo que el usuario puede ver y lo deja con la forma del prototipo. */
+  async function cargarTodo() {
+    const [colegios, cursos, perfiles, asignaciones, estudiantes, clases, registros] = await Promise.all([
+      pedir('colegios?select=*&order=nombre'),
+      pedir('cursos?select=*&order=nombre'),
+      pedir('perfiles?select=id,nombre,rol,activo&order=nombre'),
+      pedir('asignaciones?select=*'),
+      pedir('estudiantes?select=*&activo=eq.true&order=nombre'),
+      pedir('clases?select=*&order=fecha'),
+      pedir('registros?select=*&limit=50000'),
+    ]);
+
+    return {
+      version: 4,
+      colegios: (colegios || []).map(function (c) {
+        return { id: c.id, nombre: c.nombre, comuna: c.comuna || '', color: c.color || '#1F3B57' };
+      }),
+      cursos: (cursos || []).map(function (k) {
+        return { id: k.id, colegioId: k.colegio_id, nombre: k.nombre };
+      }),
+      profesores: (perfiles || []).filter(function (p) { return p.activo !== false; })
+        .map(function (p) { return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder de proyecto' : 'Profesor' }; }),
+      asignaciones: (asignaciones || []).map(function (a) {
+        return { colegioId: a.colegio_id, profesorId: a.profesor_id };
+      }),
+      estudiantes: (estudiantes || []).map(function (e) {
+        return { id: e.id, nombre: e.nombre, colegioId: e.colegio_id, cursoId: e.curso_id };
+      }),
+      sesiones: (clases || []).map(aCamelClase),
+      registros: (registros || []).map(aCamelRegistro),
+      etiquetas: ['Comprensión lectora', 'Cálculo y operatoria', 'Participación', 'Conducta',
+        'Motivación', 'Asistencia irregular', 'Apoyo familiar', 'Logro destacado'],
+      ajustes: { modoRapido: true, diasEdicion: 30 },
+    };
+  }
+
+  /* ------------------------- Escrituras ------------------------ */
+  const ahora = function () { return new Date().toISOString(); };
+
+  async function guardarClase(datos) {
+    const fila = {
+      id: datos.id,
+      fecha: datos.fecha,
+      colegio_id: datos.colegioId,
+      curso_id: datos.cursoId,
+      profesor_id: datos.profesorId,
+      realizada: datos.realizada,
+      motivo: datos.motivo || '',
+      registrado_por: datos.profesorId,
+      actualizado_en: ahora(),
+    };
+    const res = await pedir('clases?on_conflict=id', {
+      method: 'POST', body: fila,
+      prefer: 'resolution=merge-duplicates,return=representation',
+    });
+    const clase = (res && res[0]) || fila;
+
+    if (!datos.realizada) {
+      await pedir('registros?clase_id=eq.' + encodeURIComponent(clase.id), { method: 'DELETE' });
+      return clase;
+    }
+    if (datos.filas && datos.filas.length) {
+      const regs = datos.filas.map(function (f) {
+        return {
+          id: 'r-' + clase.id + '-' + f.estudianteId,
+          clase_id: clase.id,
+          estudiante_id: f.estudianteId,
+          asistencia: f.asistencia,
+          evaluacion: Number(f.evaluacion),
+          observacion: f.observacion || '',
+          etiquetas: f.etiquetas || [],
+          actualizado_en: ahora(),
+        };
+      });
+      await pedir('registros?on_conflict=id', {
+        method: 'POST', body: regs,
+        prefer: 'resolution=merge-duplicates,return=minimal',
+      });
+    }
+    return clase;
+  }
+
+  async function guardarEstudiante(e) {
+    await pedir('estudiantes?on_conflict=id', {
+      method: 'POST',
+      body: {
+        id: e.id, colegio_id: e.colegioId, curso_id: e.cursoId,
+        nombre: e.nombre, activo: true,
+      },
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
+  async function borrarEstudiante(id) {
+    await pedir('estudiantes?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+  }
+
+  async function guardarColegio(c) {
+    await pedir('colegios?on_conflict=id', {
+      method: 'POST',
+      body: { id: c.id, nombre: c.nombre, comuna: c.comuna || '', color: c.color || '#1F3B57' },
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
+  async function guardarCurso(k) {
+    await pedir('cursos?on_conflict=id', {
+      method: 'POST',
+      body: { id: k.id, colegio_id: k.colegioId, nombre: k.nombre },
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    });
+  }
+
+  async function borrarCurso(id) {
+    await pedir('cursos?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+  }
+
+  async function guardarAsignaciones(colegioId, profesorIds) {
+    await pedir('asignaciones?colegio_id=eq.' + encodeURIComponent(colegioId), { method: 'DELETE' });
+    if (!profesorIds.length) return;
+    await pedir('asignaciones', {
+      method: 'POST',
+      body: profesorIds.map(function (p) { return { colegio_id: colegioId, profesor_id: p }; }),
+      prefer: 'return=minimal',
+    });
+  }
+
+  /* ------------------- Cola para trabajar sin señal ------------- */
+  function leerCola() {
+    try { return JSON.parse(localStorage.getItem(K_COLA) || '[]'); } catch (e) { return []; }
+  }
+  function guardarCola(lista) {
+    try { localStorage.setItem(K_COLA, JSON.stringify(lista)); } catch (e) {}
+  }
+  function encolar(datos) {
+    const cola = leerCola();
+    const i = cola.findIndex(function (x) { return x.id === datos.id; });
+    if (i >= 0) cola[i] = datos; else cola.push(datos);
+    guardarCola(cola);
+    return cola.length;
+  }
+  function pendientes() { return leerCola().length; }
+
+  /** Reintenta lo que quedó pendiente. Devuelve cuántas se enviaron. */
+  async function reintentar() {
+    const cola = leerCola();
+    if (!cola.length || !sesion) return 0;
+    const quedan = [];
+    let enviadas = 0;
+    for (const datos of cola) {
+      try {
+        await guardarClase(datos);
+        enviadas++;
+      } catch (e) {
+        if (String(e.message).indexOf('sesión') >= 0) { quedan.push(datos); }
+        else quedan.push(datos);
+      }
+    }
+    guardarCola(quedan);
+    return enviadas;
+  }
+
+  /** Comprueba que la conexión esté bien configurada (para la pantalla de entrada). */
+  async function probarConexion() {
+    if (!urlBase) return { ok: false, mensaje: 'Falta configurar la dirección de la base de datos.' };
+    try {
+      const r = await fetch(urlBase + '/auth/v1/settings', { headers: { apikey: clave } });
+      if (!r.ok) return { ok: false, mensaje: 'La base de datos respondió con error ' + r.status + '.' };
+      return { ok: true, mensaje: 'Conexión correcta.' };
+    } catch (e) {
+      return { ok: false, mensaje: 'No se pudo conectar con la base de datos.' };
+    }
+  }
+
+  root.NUBE = {
+    activo: !!urlBase,
+    url: urlBase,
+    ingresar: ingresar,
+    salir: salir,
+    haySesion: haySesion,
+    usuario: usuario,
+    cargarTodo: cargarTodo,
+    guardarClase: guardarClase,
+    guardarEstudiante: guardarEstudiante,
+    borrarEstudiante: borrarEstudiante,
+    guardarColegio: guardarColegio,
+    guardarCurso: guardarCurso,
+    borrarCurso: borrarCurso,
+    guardarAsignaciones: guardarAsignaciones,
+    encolar: encolar,
+    pendientes: pendientes,
+    reintentar: reintentar,
+    probarConexion: probarConexion,
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+/* ============================================================
    app.js — Interfaz del sistema de reforzamiento.
    Sin dependencias ni servidor: funciona con doble clic.
    Pensada primero para celular.
@@ -1960,6 +2345,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
   'use strict';
 
   const LOGIC = window.LOGIC, DEMO = window.DEMO, REPORT = window.REPORT, XLSX = window.XLSX;
+  const NUBE = window.NUBE || null;
+  const EN_NUBE = !!(NUBE && NUBE.activo);
 
   /* ------------------------- Utilidades ------------------------ */
   const $ = (s, r) => (r || document).querySelector(s);
@@ -2028,11 +2415,20 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
     return DEMO.buildDemoDB(new Date());
   }
   function guardarDB() {
+    if (EN_NUBE) return;
     try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); }
     catch (e) { toast('No se pudo guardar en este navegador. Descarga un respaldo en Ajustes.', 'err'); }
   }
 
-  DB = cargarDB();
+  function baseVacia() {
+    return {
+      version: 4, colegios: [], cursos: [], profesores: [], asignaciones: [],
+      estudiantes: [], sesiones: [], registros: [], etiquetas: [],
+      ajustes: { modoRapido: true, diasEdicion: 30 },
+    };
+  }
+
+  DB = EN_NUBE ? baseVacia() : cargarDB();
 
   /* ---------------------------- Estado ------------------------- */
   const S = {
@@ -2462,7 +2858,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
     foot.innerHTML = h;
   }
 
-  function enviar() {
+  async function enviar() {
     S.intentado = true;
     if (fueraDePlazo() && !S.modoLider) {
       toast('Esta clase está fuera del plazo de corrección (' + diasEdicion() + ' días).', 'err');
@@ -2470,6 +2866,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
     }
     const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
     const payload = {
+      id: 's-' + S.cursoId + '-' + S.fecha,
       fecha: S.fecha, colegioId: S.colegioId, cursoId: S.cursoId, profesorId: S.profesorId,
       realizada: S.realizada, motivo: S.motivo,
       filas: ests.map(e => {
@@ -2490,14 +2887,16 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
       return;
     }
     const res = LOGIC.guardarSesion(DB, payload);
-    guardarDB();
     S.editando = res.sesion;
     S.intentado = false;
+    const subido = await subirClase(res, payload);
+    if (!subido) { pintarCtx(); pintarCurso(); return; }
     if (res.sesion.realizada) {
       const r = resumenFilas();
       const k = LOGIC.indicadores(DB, { desde: S.fecha, hasta: S.fecha, cursoId: S.cursoId });
-      S.ultimo = 'Registro guardado: ' + r.presentes + ' presente(s) y ' + r.ausentes +
-        ' ausente(s)' + (k.promedio !== null ? ' · promedio ' + LOGIC.num(k.promedio, 1) : '') + '.';
+      S.ultimo = 'Registro guardado: ' + r.presentes + (r.presentes === 1 ? ' presente' : ' presentes') +
+        ' y ' + r.ausentes + (r.ausentes === 1 ? ' ausente' : ' ausentes') +
+        (k.promedio !== null ? ' · promedio ' + LOGIC.num(k.promedio, 1) : '') + '.';
       toast('Registro guardado', 'ok');
     } else {
       S.ultimo = 'Clase del ' + LOGIC.fmtFecha(S.fecha) + ' guardada como no realizada.';
@@ -2732,7 +3131,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
         '<button class="btn btn-primary" id="e-add">+ Agregar estudiante</button>' +
       '</div>' +
       '<div class="card"><div class="card-head"><h2>' + esc(col ? col.nombre : '') + '</h2>' +
-        '<span class="hint">' + lista.length + ' estudiante(s) en la lista</span></div>' +
+        '<span class="hint">' + lista.length + (lista.length === 1 ? ' estudiante' : ' estudiantes') + ' en la lista</span></div>' +
         '<div class="card-body" style="padding:0">' +
         (lista.length ? '<table class="tbl"><thead><tr><th>Estudiante</th><th>Curso</th>' +
           '<th>Asistencia</th><th class="hide-sm">Nivel</th><th class="hide-sm">Obs.</th><th></th></tr></thead><tbody>' +
@@ -2785,18 +3184,26 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
         (e ? '<hr class="sep"><button class="btn btn-danger btn-sm" id="me-borrar">Quitar de la lista</button>' : ''),
       acciones: [
         { label: 'Cancelar', cls: '' },
-        { label: e ? 'Guardar' : 'Agregar', cls: 'btn-primary', fn: () => {
+        { label: e ? 'Guardar' : 'Agregar', cls: 'btn-primary', fn: async () => {
           const nombre = $('#me-nombre').value.trim();
           if (!nombre) { toast('Escribe el nombre del estudiante', 'err'); return false; }
           const colId = $('#me-col').value;
           const cursoId = $('#me-cur').value;
           if (!cursoId) { toast('El colegio no tiene cursos: agrégalos en Ajustes', 'err'); return false; }
+          let objetivo;
           if (e) {
             Object.assign(e, { nombre, colegioId: colId, cursoId });
+            objetivo = e;
           } else {
-            DB.estudiantes.push({ id: 'e' + Date.now().toString(36), nombre, colegioId: colId, cursoId, notas: '' });
+            objetivo = { id: 'e' + Date.now().toString(36), nombre, colegioId: colId, cursoId, notas: '' };
+            DB.estudiantes.push(objetivo);
           }
-          guardarDB();
+          if (EN_NUBE) {
+            try { await NUBE.guardarEstudiante(objetivo); }
+            catch (err) { toast('No se pudo guardar en la base: ' + err.message, 'err'); return false; }
+          } else {
+            guardarDB();
+          }
           toast(e ? 'Estudiante actualizado' : 'Estudiante agregado', 'ok');
           cargarSesion();
           renderEstudiantes();
@@ -2809,9 +3216,13 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
       $('#me-cur').innerHTML = ks.map(k => '<option value="' + k.id + '">' + esc(k.nombre) + '</option>').join('');
     });
     if (e) {
-      $('#me-borrar').addEventListener('click', () => {
+      $('#me-borrar').addEventListener('click', async () => {
         const n = DB.registros.filter(r => r.estudianteId === e.id).length;
         if (!confirm('¿Quitar a ' + e.nombre + ' de la lista? Se borrarán también sus ' + n + ' registros de clase.')) return;
+        if (EN_NUBE) {
+          try { await NUBE.borrarEstudiante(e.id); }
+          catch (err) { toast('No se pudo quitar: ' + err.message, 'err'); return; }
+        }
         DB.estudiantes = DB.estudiantes.filter(x => x.id !== e.id);
         DB.registros = DB.registros.filter(r => r.estudianteId !== e.id);
         guardarDB();
@@ -3015,12 +3426,18 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
       DB.profesores.push({ id: 'p' + Date.now().toString(36), nombre: n, rol: 'Profesor' });
       guardarDB(); renderAjustes(); toast('Profesor agregado', 'ok');
     });
-    $('#a-addcol').addEventListener('click', () => {
+    $('#a-addcol').addEventListener('click', async () => {
       const n = $('#a-col').value.trim();
       if (!n) return;
       const id = 'c' + Date.now().toString(36);
-      DB.colegios.push({ id, nombre: n, comuna: 'Los Parques', color: '#553C9A' });
-      DB.cursos.push({ id: 'k' + Date.now().toString(36), colegioId: id, nombre: 'Curso 1' });
+      const col = { id, nombre: n, comuna: 'Los Parques', color: '#553C9A' };
+      const cur = { id: 'k' + Date.now().toString(36), colegioId: id, nombre: 'Curso 1' };
+      if (EN_NUBE) {
+        try { await NUBE.guardarColegio(col); await NUBE.guardarCurso(cur); }
+        catch (err) { toast('No se pudo guardar: ' + err.message, 'err'); return; }
+      }
+      DB.colegios.push(col);
+      DB.cursos.push(cur);
       guardarDB(); renderAjustes(); toast('Colegio agregado con un curso inicial', 'ok');
     });
     $('#a-dias').addEventListener('change', e => {
@@ -3067,6 +3484,23 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
       guardarDB(); cargarSesion(); renderAjustes(); S.ultimo = null;
       toast('Datos de ejemplo restaurados', 'ok');
     });
+
+    // En modo en uso no se crean cuentas ni se restauran datos de ejemplo.
+    // Este ajuste va al final, cuando todos los botones ya tienen su acción.
+    if (EN_NUBE) {
+      const campo = $('#a-prof');
+      if (campo) {
+        campo.parentNode.innerHTML = '<p class="small" style="margin:0">Las cuentas se crean en el panel de Supabase ' +
+          '(Authentication → Users) y después se asignan a cada colegio. Si alguien deja el proyecto, desactívalo en la base.</p>';
+      }
+      $$('[data-delprof]', cont).forEach(function (b) { b.remove(); });
+      const reset = $('#a-reset');
+      if (reset) reset.remove();
+      const cargar = $('#a-load');
+      if (cargar) cargar.remove();
+      const nota = cont.querySelector('.card:last-child .card-body p:last-child');
+      if (nota) nota.textContent = 'Los datos se guardan en la base compartida: lo que registra cada profesor lo ve la líder al instante.';
+    }
   }
 
   function modalCurso(colegioId) {
@@ -3085,10 +3519,15 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
           '<input type="text" id="mc-nombre" placeholder="Ej: Curso 2, Taller de lectura…"></div>',
       acciones: [
         { label: 'Cerrar' },
-        { label: 'Agregar curso', cls: 'btn-primary', fn: () => {
+        { label: 'Agregar curso', cls: 'btn-primary', fn: async () => {
           const n = $('#mc-nombre').value.trim();
           if (!n) { toast('Escribe el nombre del curso', 'err'); return false; }
-          DB.cursos.push({ id: 'k' + Date.now().toString(36), colegioId, nombre: n });
+          const nuevo = { id: 'k' + Date.now().toString(36), colegioId, nombre: n };
+          if (EN_NUBE) {
+            try { await NUBE.guardarCurso(nuevo); }
+            catch (err) { toast('No se pudo guardar: ' + err.message, 'err'); return false; }
+          }
+          DB.cursos.push(nuevo);
           guardarDB(); renderAjustes(); toast('Curso agregado', 'ok');
           return true;
         } },
@@ -3110,8 +3549,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
         }).join(''),
       acciones: [
         { label: 'Cancelar' },
-        { label: 'Guardar', cls: 'btn-primary', fn: () => {
+        { label: 'Guardar', cls: 'btn-primary', fn: async () => {
           const marcados = $$('[data-p]', $('#modal')).filter(x => x.checked).map(x => x.dataset.p);
+          if (EN_NUBE) {
+            try { await NUBE.guardarAsignaciones(colegioId, marcados); }
+            catch (err) { toast('No se pudo guardar: ' + err.message, 'err'); return false; }
+          }
           DB.asignaciones = DB.asignaciones.filter(a => a.colegioId !== colegioId)
             .concat(marcados.map(pid => ({ colegioId, profesorId: pid })));
           guardarDB(); renderAjustes(); toast('Asignaciones guardadas', 'ok');
@@ -3197,8 +3640,21 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
   /* ================================================================
      Arranque
      ================================================================ */
-  function init() {
+  async function init() {
     $$('.tab').forEach(t => t.addEventListener('click', () => ir(t.dataset.view)));
+    if (EN_NUBE) {
+      if (NUBE.haySesion()) {
+        try {
+          await cargarDeNube();
+          arrancar();
+        } catch (e) {
+          mostrarLogin('No se pudieron cargar los datos: ' + e.message);
+        }
+      } else {
+        mostrarLogin('');
+      }
+      return;
+    }
     initSeleccion();
     ir('registrar');
     if (!ALMACEN_OK) {
@@ -3209,6 +3665,114 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:16px 0}
         'Puedes recorrer las pantallas, pero lo que registres se perderá al cerrar. Abre el sistema en Chrome o Edge, o con el enlace publicado.</div>';
       const main = document.querySelector('main');
       if (main) main.insertBefore(aviso, main.firstChild);
+    }
+  }
+
+  /* ================================================================
+     MODO EN USO · entrada, carga y guardado en la base compartida
+     ================================================================ */
+  async function cargarDeNube() {
+    DB = await NUBE.cargarTodo();
+    DB.ajustes = DB.ajustes || { modoRapido: true, diasEdicion: 30 };
+    if (!DB.etiquetas || !DB.etiquetas.length) {
+      DB.etiquetas = ['Comprensión lectora', 'Cálculo y operatoria', 'Participación', 'Conducta',
+        'Motivación', 'Asistencia irregular', 'Apoyo familiar', 'Logro destacado'];
+    }
+    if (NUBE.pendientes()) {
+      try { await NUBE.reintentar(); DB = await NUBE.cargarTodo(); } catch (e) { /* sigue sin conexión */ }
+    }
+  }
+
+  function arrancar() {
+    document.body.classList.remove('sin-tabs');
+    initSeleccion();
+    pintarUsuario();
+    ir('registrar');
+  }
+
+  function mostrarLogin(mensaje) {
+    document.body.classList.add('sin-tabs');
+    $$('.view').forEach(v => v.classList.remove('on'));
+    const c = $('#view-login');
+    c.classList.add('on');
+    c.innerHTML =
+      '<div class="login-card">' +
+        '<div class="brand" style="margin-bottom:18px"><span class="mark">R</span>' +
+          '<div>Reforzamiento<small>Sistema en uso</small></div></div>' +
+        '<h1 style="font-size:20px;margin:0 0 6px">Entrar</h1>' +
+        '<p class="small" style="margin:0 0 18px">Usa la cuenta que te entregó la líder del proyecto.</p>' +
+        (mensaje ? '<div class="banner err" style="margin-bottom:14px"><span class="ic">!</span><div>' + esc(mensaje) + '</div></div>' : '') +
+        '<form id="login-form">' +
+          '<div class="field" style="margin-bottom:12px"><label for="lg-email">Correo</label>' +
+            '<input type="email" id="lg-email" autocomplete="username" required placeholder="nombre@correo.cl"></div>' +
+          '<div class="field" style="margin-bottom:18px"><label for="lg-pass">Contraseña</label>' +
+            '<input type="password" id="lg-pass" autocomplete="current-password" required></div>' +
+          '<button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Entrar</button>' +
+        '</form>' +
+        '<p class="small" style="margin:14px 0 0;text-align:center">¿Olvidaste tu contraseña? Pídele a la líder que la restablezca.</p>' +
+      '</div>';
+    $('#login-form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const b = ev.target.querySelector('button');
+      b.disabled = true; b.textContent = 'Entrando…';
+      try {
+        await NUBE.ingresar($('#lg-email').value, $('#lg-pass').value);
+        await cargarDeNube();
+        arrancar();
+        toast('Bienvenido/a', 'ok');
+      } catch (e) {
+        b.disabled = false; b.textContent = 'Entrar';
+        const aviso = $('.banner.err', c);
+        if (aviso) aviso.querySelector('div').textContent = e.message;
+        else mostrarLogin(e.message);
+      }
+    });
+  }
+
+  function pintarUsuario() {
+    if (!EN_NUBE) return;
+    const u = NUBE.usuario();
+    const cont = document.querySelector('.topbar-in');
+    if (!cont || $('.userbox')) return;
+    const div = document.createElement('div');
+    div.className = 'userbox';
+    div.innerHTML = '<span class="uname" title="' + esc(u.email || '') + '">' + esc(u.nombre || u.email) + '</span>' +
+      '<span class="pend" id="pend" hidden></span>' +
+      '<button class="btn btn-sm btn-ghost" id="salir">Salir</button>';
+    cont.appendChild(div);
+    $('#salir').addEventListener('click', async () => {
+      await NUBE.salir();
+      location.reload();
+    });
+    actualizarPendientes();
+  }
+
+  function actualizarPendientes() {
+    if (!EN_NUBE) return;
+    const el = $('#pend');
+    if (!el) return;
+    const n = NUBE.pendientes();
+    el.hidden = !n;
+    el.textContent = n ? n + ' sin enviar' : '';
+  }
+
+  /** Guarda la clase en la base. Si no hay conexión, la deja en cola. */
+  async function subirClase(res, payload) {
+    if (!EN_NUBE) { guardarDB(); return true; }
+    const datos = {
+      id: res.sesion.id, fecha: payload.fecha, colegioId: payload.colegioId,
+      cursoId: payload.cursoId, profesorId: payload.profesorId,
+      realizada: payload.realizada, motivo: payload.motivo, filas: payload.filas,
+    };
+    try {
+      await NUBE.guardarClase(datos);
+      actualizarPendientes();
+      return true;
+    } catch (e) {
+      NUBE.encolar(datos);
+      actualizarPendientes();
+      toast('Sin conexión: el registro quedó guardado en este teléfono y se enviará solo.', 'err');
+      return false;
     }
   }
 

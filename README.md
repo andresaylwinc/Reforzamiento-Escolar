@@ -39,6 +39,19 @@ Doble clic en **`Sistema-Asistencia.html`**.
 | Corrección | 30 días desde la clase (configurable). Después, solo la líder. |
 | Estudiantes | La lista del curso es la vigente: se agrega quien se integra y se quita quien sale. |
 
+## Dos modos
+
+| Modo | Cuándo | Qué usa |
+|---|---|---|
+| **Local** (por defecto) | Para probar el diseño | Datos de ejemplo guardados en el navegador. No pide cuenta. |
+| **En uso** | Para el trabajo real | Base de datos compartida en Supabase, cuentas por persona y permisos por rol. |
+
+Para pasar a modo en uso sigue **[GUIA-SISTEMA-EN-USO.md](GUIA-SISTEMA-EN-USO.md)**:
+crear el proyecto, ejecutar el esquema y pegar dos valores en `config.js`.
+
+Los archivos `.sql` de `supabase/` **no se abren ni se ejecutan desde el proyecto**: se copian
+y se pegan en el *SQL Editor* del panel de Supabase (supabase.com → tu proyecto → SQL Editor).
+
 ## Documentos
 
 | Archivo | Qué es |
@@ -79,8 +92,12 @@ Las tres deben terminar sin fallas antes de entregar cambios.
 
 ## Alcance
 
-Esto es un prototipo de diseño, no la versión en producción. Falta: cuentas y permisos por rol,
-base de datos compartida, funcionamiento sin conexión, historial de cambios por registro, carga
-masiva de estudiantes e informes en Word/PDF. El detalle está en el punto 7 de la propuesta.
+El sistema tiene dos modos. En **modo en uso** ya incluye cuentas con rol, base de datos
+compartida con permisos por colegio, guardado sin conexión con reenvío automático y el
+registro por curso.
+
+Falta para completar: historial de cambios registro por registro (hoy se guarda quién y
+cuándo fue la última modificación), carga masiva de estudiantes desde una planilla,
+informe en Word y notificaciones por correo.
 
 Todos los nombres son genéricos (Colegio 1, Profesor 1, Estudiante 1): no corresponden a personas ni establecimientos reales.

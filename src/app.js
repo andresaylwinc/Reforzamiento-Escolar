@@ -1155,8 +1155,33 @@
     if (EN_NUBE) {
       const campo = $('#a-prof');
       if (campo) {
-        campo.parentNode.innerHTML = '<p class="small" style="margin:0">Las cuentas se crean en el panel de Supabase ' +
-          '(Authentication → Users) y después se asignan a cada colegio. Si alguien deja el proyecto, desactívalo en la base.</p>';
+        const caja = campo.parentNode;
+        caja.style.alignItems = 'flex-end';
+        caja.innerHTML =
+          '<div class="field" style="min-width:165px"><label>Nombre</label>' +
+            '<input id="np-nombre" type="text" placeholder="Nombre y apellido"></div>' +
+          '<div class="field" style="min-width:190px"><label>Correo</label>' +
+            '<input id="np-email" type="email" placeholder="nombre@correo.cl"></div>' +
+          '<div class="field" style="min-width:150px"><label>Contraseña temporal</label>' +
+            '<input id="np-pass" type="text" placeholder="mínimo 8 caracteres"></div>' +
+          '<button class="btn btn-primary" id="np-crear">Crear cuenta</button>';
+        $('#np-crear').addEventListener('click', async function () {
+          const nombre = $('#np-nombre').value.trim();
+          const email = $('#np-email').value.trim();
+          const pass = $('#np-pass').value;
+          if (!nombre || !email || !pass) { toast('Completa nombre, correo y contraseña', 'err'); return; }
+          const b = $('#np-crear');
+          b.disabled = true; b.textContent = 'Creando…';
+          try {
+            await NUBE.crearProfesor({ nombre: nombre, email: email, password: pass });
+            DB.profesores = await NUBE.perfiles();
+            renderAjustes();
+            toast('Cuenta creada: entrégale a ' + nombre + ' el correo ' + email + ' y esa contraseña.', 'ok');
+          } catch (err) {
+            b.disabled = false; b.textContent = 'Crear cuenta';
+            toast(err.message, 'err');
+          }
+        });
       }
       $$('[data-delprof]', cont).forEach(function (b) { b.remove(); });
       const reset = $('#a-reset');

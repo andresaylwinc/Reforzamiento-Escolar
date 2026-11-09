@@ -24,7 +24,7 @@ const html = fs.readFileSync('Sistema-Asistencia.html');
 const estatico = http.createServer((req, res) => {
   if ((req.url || '').indexOf('config.js') >= 0) {
     res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
-    res.end(fs.readFileSync('config.js'));
+    res.end('window.CONFIG={supabaseUrl:"",supabaseKey:""};');
     return;
   }
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -109,6 +109,19 @@ await ev('(function(){ document.querySelector("#me-nombre").value="Estudiante Nu
 await sleep(1500);
 check('agrega el estudiante en la base', mock.datos.estudiantes.length === 4, mock.datos.estudiantes.length);
 check('la tabla se actualiza', await ev('document.querySelectorAll("#view-estudiantes tbody tr").length') === antes + 1);
+
+console.log('== Crear cuenta de profesor desde la app ==');
+await ev('(document.querySelector("[data-view=ajustes]").click(), true)');
+await sleep(700);
+check('el formulario de cuentas está disponible', await ev('!!document.querySelector("#np-crear")'));
+const antesPerfiles = mock.datos.perfiles.length;
+await ev('(function(){ document.querySelector("#np-nombre").value="Profesor Nuevo"; document.querySelector("#np-email").value="nuevo@ejemplo.cl"; document.querySelector("#np-pass").value="clave12345"; document.querySelector("#np-crear").click(); return true; })()');
+await sleep(1800);
+check('la cuenta se creó en la base', mock.datos.perfiles.length === antesPerfiles + 1, mock.datos.perfiles.length);
+check('la cuenta aparece en la lista', (await txt('#view-ajustes')).indexOf('Profesor Nuevo') >= 0);
+await ev('(function(){ document.querySelector("#np-nombre").value="Otra"; document.querySelector("#np-email").value="nuevo@ejemplo.cl"; document.querySelector("#np-pass").value="clave12345"; document.querySelector("#np-crear").click(); return true; })()');
+await sleep(1400);
+check('avisa si el correo ya existe', (await txt('#toast')).indexOf('Ya existe') >= 0, await txt('#toast'));
 
 fs.mkdirSync('Ejemplos/capturas', { recursive: true });
 await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 1000, deviceScaleFactor: 2, mobile: true });

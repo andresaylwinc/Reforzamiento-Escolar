@@ -71,6 +71,27 @@ select u.email, p.nombre, p.rol
 4. **Authentication → Providers → Email**: desactiva **Enable sign ups**, para que nadie
    pueda crearse una cuenta por su cuenta.
 
+### Crear cuentas desde la app (recomendado)
+
+Para no volver al panel cada vez que entra un profesor, se instala una función que crea las
+cuentas por ti. Se hace una sola vez:
+
+1. En Supabase: **Edge Functions** → **Deploy a new function** → **Via Editor**.
+2. Nombre: `crear-profesor` (exacto).
+3. Pega el contenido de [`supabase/funciones/crear-profesor/index.ts`](supabase/funciones/crear-profesor/index.ts).
+4. **Deploy** y espera a que diga *deployed*.
+
+Con eso, en la app aparecerá el formulario en **Ajustes → Profesores**: escribes nombre,
+correo y una contraseña temporal, y la cuenta queda creada y confirmada.
+
+> La clave secreta del proyecto nunca pasa por el navegador: vive dentro de la función, en los
+> servidores de Supabase. La app solo envía la sesión de la líder y la función comprueba que su
+> perfil diga `rol = lider` antes de crear nada.
+>
+> Si el botón responde *"Falta desplegar la función crear-profesor"*, revisa el nombre y que el
+> despliegue haya terminado. Si responde *"Falta la clave secreta"*, en **Edge Functions → Secrets**
+> agrega `SUPABASE_SERVICE_ROLE_KEY` con la clave `service_role` (o `secret`) del proyecto.
+
 > Si una cuenta dice *"no tiene perfil en el sistema"*, es porque se creó antes de ejecutar
 > el esquema. Vuelve a correr el `insert ... from auth.users` que está al final del punto 7
 > del archivo `supabase/1-esquema.sql`.

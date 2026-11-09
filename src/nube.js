@@ -341,6 +341,41 @@
     }
   }
 
+  /* -------------------- Cuentas de profesores ------------------ */
+  async function crearProfesor(datos) {
+    const s = await asegurar();
+    if (!s) throw new Error('La sesión venció. Vuelve a entrar.');
+    let r;
+    try {
+      r = await fetch(urlBase + '/functions/v1/crear-profesor', {
+        method: 'POST',
+        headers: {
+          apikey: clave,
+          Authorization: 'Bearer ' + s.access_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datos),
+      });
+    } catch (e) {
+      throw new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
+    }
+    let d = null;
+    try { d = await r.json(); } catch (e) { /* respuesta sin cuerpo */ }
+    if (r.status === 404) {
+      throw new Error('Falta desplegar la función "crear-profesor" en Supabase. Revisa la guía.');
+    }
+    if (!r.ok) throw new Error((d && d.error) || 'No se pudo crear la cuenta (' + r.status + ').');
+    return d;
+  }
+
+  async function perfiles() {
+    const p = await pedir('perfiles?select=id,nombre,rol,activo&order=nombre');
+    return (p || []).filter(function (x) { return x.activo !== false; })
+      .map(function (x) {
+        return { id: x.id, nombre: x.nombre, rol: x.rol === 'lider' ? 'Líder de proyecto' : 'Profesor' };
+      });
+  }
+
   root.NUBE = {
     activo: !!urlBase,
     url: urlBase,
@@ -359,6 +394,8 @@
     encolar: encolar,
     pendientes: pendientes,
     reintentar: reintentar,
+    crearProfesor: crearProfesor,
+    perfiles: perfiles,
     probarConexion: probarConexion,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

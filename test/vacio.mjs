@@ -19,7 +19,7 @@ const mock = crearServidor({ vacio: true });
 const api = await mock.escuchar(0);
 
 const html = fs.readFileSync('Sistema-Asistencia.html');
-const config = fs.readFileSync('config.js');
+const config = 'window.CONFIG={supabaseUrl:"",supabaseKey:""};';
 const estatico = http.createServer((req, res) => {
   if ((req.url || '').indexOf('config.js') >= 0) {
     res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });

@@ -1,11 +1,12 @@
 /* Prueba de flujo completo en navegador real (CDP): cursos, registro, plazo, secciones. */
 import { spawn } from 'node:child_process';
+import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 const PORT = 9344;
-const FILE = 'file:///G:/Mi%20unidad/000%20-%20ESCRITORIO%20PERSONAL/deepSeekLosParques/Sistema-Asistencia.html';
+let FILE = '';
 const OUT = 'Ejemplos/capturas';
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -62,6 +63,19 @@ async function main() {
     }
   };
   await send('Page.enable'); await send('Runtime.enable');
+  // Se sirve la app con configuración vacía: esta prueba cubre el modo local
+  const htmlLocal = fs.readFileSync('Sistema-Asistencia.html');
+  const srv = http.createServer((req, res) => {
+    if ((req.url || '').indexOf('config.js') >= 0) {
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+      res.end('window.CONFIG={supabaseUrl:"",supabaseKey:""};');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(htmlLocal);
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  FILE = 'http://127.0.0.1:' + srv.address().port + '/';
   await send('Page.navigate', { url: FILE });
   await sleep(1700);
 

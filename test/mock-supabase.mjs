@@ -90,6 +90,18 @@ export function crearServidor(opciones = {}) {
         return json(200, { access_token: 'tok-ref', refresh_token: 'ref-2', expires_in: 3600, user: { id: 'u-lider' } });
       }
 
+      // ---- Función crear-profesor ----
+      if (ruta === '/functions/v1/crear-profesor') {
+        if (!req.headers.authorization) return json(401, { error: 'Sin sesión' });
+        const b = cuerpo ? JSON.parse(cuerpo) : {};
+        if (!b.nombre || !b.email || !b.password) return json(400, { error: 'Faltan el nombre, el correo o la contraseña' });
+        if (String(b.password).length < 8) return json(400, { error: 'La contraseña debe tener al menos 8 caracteres' });
+        if (datos.perfiles.some((p) => p.email === b.email)) return json(409, { error: 'Ya existe una cuenta con ese correo' });
+        const id = 'u-' + Math.random().toString(36).slice(2, 8);
+        datos.perfiles.push({ id: id, nombre: b.nombre, rol: 'profesor', activo: true, email: b.email });
+        return json(200, { ok: true, id: id, email: b.email });
+      }
+
       // ---- PostgREST ----
       const m = ruta.match(/^\/rest\/v1\/([a-z_]+)$/);
       if (!m) return json(404, { message: 'ruta no encontrada' });

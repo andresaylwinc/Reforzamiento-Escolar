@@ -13,6 +13,18 @@
   const NUBE = window.NUBE || null;
   const EN_NUBE = !!(NUBE && NUBE.activo);
 
+  /**
+   * ¿La cuenta en uso puede administrar el equipo (y eliminar cosas)?
+   * En modo de prueba no hay cuentas: todo es de prueba.
+   * En modo en uso manda el rol que trae la sesión: la líder del proyecto.
+   * La base de datos vuelve a comprobarlo, así que esto es solo la pantalla.
+   */
+  function esLider() {
+    if (!EN_NUBE) return true;
+    const u = NUBE.usuario();
+    return !!(u && u.rol === 'lider');
+  }
+
   /* ------------------------- Utilidades ------------------------ */
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));

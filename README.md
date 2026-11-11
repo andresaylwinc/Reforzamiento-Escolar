@@ -37,7 +37,8 @@ Doble clic en **`Sistema-Asistencia.html`**.
 | Observación | Opcional, texto libre, con etiquetas opcionales para agrupar. |
 | Clase no realizada | Se registra con motivo; no cuenta como ausencia de nadie. |
 | Corrección | 30 días desde la clase (configurable). Después, solo la líder. |
-| Estudiantes | La lista del curso es la vigente: se agrega quien se integra y se quita quien sale. |
+| Estudiantes | La lista del curso es la vigente: se agrega quien se integra y se quita quien sale. Agregar y editar lo puede hacer cualquier profesor de ese colegio; **eliminar es solo de la líder**. |
+| Bajas | Eliminar un colegio, un estudiante o una cuenta es solo de la líder. La cuenta de una persona se **desactiva**, no se borra: conserva sus clases y se puede restaurar. |
 
 ## Dos modos
 

@@ -160,12 +160,37 @@ solo la líder puede modificarla (la app lo avisa y la base lo impide).
 | Ver colegios asignados | Sí | Todos |
 | Ver estudiantes de sus colegios | Sí | Todos |
 | Registrar y corregir sus clases | Sí (30 días) | Sí (siempre) |
-| Agregar o quitar estudiantes | Sí, en sus colegios | Sí, en todos |
+| Agregar o editar estudiantes | Sí, en sus colegios | Sí, en todos |
+| **Eliminar estudiantes** | No | Sí |
+| **Eliminar colegios** | No | Sí |
+| **Quitar cuentas del equipo** | No | Sí |
 | Crear colegios y cursos | No | Sí |
 | Ver todos los colegios y el panel completo | No | Sí |
 
 Estas reglas no están solo en la pantalla: están en la base de datos, así que valen aunque
 alguien use otro programa para consultar.
+
+## Eliminar colegios, estudiantes y cuentas
+
+Son tres acciones que **solo ve y puede hacer la líder**, y ninguna tiene deshacer. Antes de
+confirmar, la app dice exactamente qué se va a borrar. Todas están en **Ajustes** y en
+**Estudiantes**.
+
+| Qué | Dónde | Qué se lleva consigo |
+|---|---|---|
+| **Estudiante** | Estudiantes → *Quitar* (o dentro de *Editar*) | Sus registros de clase |
+| **Colegio** | Ajustes → Colegios → *Eliminar* | Sus cursos, estudiantes, clases, registros y asignaciones. Pide escribir el nombre del colegio para confirmar. |
+| **Cuenta** | Ajustes → Profesores → *Quitar* | Nada: la cuenta se **desactiva** |
+
+La cuenta de una persona no se borra: queda **dada de baja**. Deja de aparecer en las listas y
+no puede entrar, pero las clases que registró se conservan con su nombre, y en *Ajustes →
+Cuentas dadas de baja* se puede **restaurar**. Para borrar la cuenta del todo hay que hacerlo en
+**Supabase → Authentication → Users**: eso es aparte, porque la cuenta vive en el sistema de
+acceso, no en las tablas del proyecto.
+
+> Si ya tenías la base creada, vuelve a ejecutar `supabase/1-esquema.sql` completo en el
+> *SQL Editor*: reemplaza las reglas de acceso para que solo la líder pueda eliminar. El
+> archivo se puede correr las veces que haga falta sin perder datos.
 
 ## Cuando no hay señal
 

@@ -154,17 +154,28 @@ drop policy if exists asignaciones_lider on public.asignaciones;
 create policy asignaciones_lider on public.asignaciones for all to authenticated
   using (public.es_lider()) with check (public.es_lider());
 
--- Estudiantes: los profesores pueden agregar y editar los de sus colegios
+-- Estudiantes: los profesores pueden agregar y editar los de sus colegios,
+-- pero ELIMINAR es solo de la líder (el borrado se lleva los registros de la persona).
 drop policy if exists estudiantes_lectura on public.estudiantes;
 create policy estudiantes_lectura on public.estudiantes for select to authenticated
   using (public.puedo_ver_colegio(colegio_id));
 
 drop policy if exists estudiantes_escritura on public.estudiantes;
-create policy estudiantes_escritura on public.estudiantes for all to authenticated
+drop policy if exists estudiantes_agregar on public.estudiantes;
+create policy estudiantes_agregar on public.estudiantes for insert to authenticated
+  with check (public.puedo_ver_colegio(colegio_id));
+
+drop policy if exists estudiantes_editar on public.estudiantes;
+create policy estudiantes_editar on public.estudiantes for update to authenticated
   using (public.puedo_ver_colegio(colegio_id))
   with check (public.puedo_ver_colegio(colegio_id));
 
--- Clases: el profesor puede crear y corregir las suyas dentro de 30 días
+drop policy if exists estudiantes_borrar on public.estudiantes;
+create policy estudiantes_borrar on public.estudiantes for delete to authenticated
+  using (public.es_lider());
+
+-- Clases: el profesor puede crear y corregir las suyas dentro de 30 días.
+-- Borrar una clase (y con ella sus registros) es solo de la líder.
 drop policy if exists clases_lectura on public.clases;
 create policy clases_lectura on public.clases for select to authenticated
   using (public.puedo_ver_colegio(colegio_id));
@@ -175,6 +186,10 @@ create policy clases_insertar on public.clases for insert to authenticated
     public.es_lider()
     or (profesor_id = auth.uid() and public.puedo_ver_colegio(colegio_id))
   );
+
+drop policy if exists clases_borrar on public.clases;
+create policy clases_borrar on public.clases for delete to authenticated
+  using (public.es_lider());
 
 drop policy if exists clases_corregir on public.clases;
 create policy clases_corregir on public.clases for update to authenticated

@@ -284,6 +284,21 @@
     await pedir('cursos?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
   }
 
+  /**
+   * Borra un colegio con todo lo que cuelga de él.
+   * El orden importa: las clases van primero (sus registros se van con ellas),
+   * después estudiantes, cursos y asignaciones, y el colegio al final.
+   * Solo la líder puede hacerlo: las reglas de la base lo impiden al resto.
+   */
+  async function borrarColegio(id) {
+    const q = 'colegio_id=eq.' + encodeURIComponent(id);
+    await pedir('clases?' + q, { method: 'DELETE' });
+    await pedir('estudiantes?' + q, { method: 'DELETE' });
+    await pedir('cursos?' + q, { method: 'DELETE' });
+    await pedir('asignaciones?' + q, { method: 'DELETE' });
+    await pedir('colegios?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+  }
+
   async function guardarAsignaciones(colegioId, profesorIds) {
     await pedir('asignaciones?colegio_id=eq.' + encodeURIComponent(colegioId), { method: 'DELETE' });
     if (!profesorIds.length) return;
@@ -368,12 +383,44 @@
     return d;
   }
 
-  async function perfiles() {
+  /**
+   * Cuentas del equipo. Por defecto solo las activas; con `true` trae también
+   * las dadas de baja (para poder restaurarlas).
+   */
+  async function perfiles(incluirInactivos) {
     const p = await pedir('perfiles?select=id,nombre,rol,activo&order=nombre');
-    return (p || []).filter(function (x) { return x.activo !== false; })
+    return (p || [])
+      .filter(function (x) { return incluirInactivos || x.activo !== false; })
       .map(function (x) {
-        return { id: x.id, nombre: x.nombre, rol: x.rol === 'lider' ? 'Líder de proyecto' : 'Profesor' };
+        return {
+          id: x.id,
+          nombre: x.nombre,
+          rol: x.rol === 'lider' ? 'Líder de proyecto' : 'Profesor',
+          activo: x.activo !== false,
+        };
       });
+  }
+
+  /** Cambia el estado de una cuenta (solo la líder puede). */
+  async function actualizarPerfil(id, campos) {
+    await pedir('perfiles?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: campos,
+      prefer: 'return=minimal',
+    });
+  }
+
+  /**
+   * Quita a una persona del equipo sin borrar su historia: la cuenta queda
+   * desactivada, no puede entrar y desaparece de las listas, pero sus clases
+   * se conservan. Se puede restaurar.
+   */
+  async function quitarProfesor(id) {
+    await actualizarPerfil(id, { activo: false });
+  }
+
+  async function restaurarProfesor(id) {
+    await actualizarPerfil(id, { activo: true });
   }
 
   root.NUBE = {
@@ -390,12 +437,16 @@
     guardarColegio: guardarColegio,
     guardarCurso: guardarCurso,
     borrarCurso: borrarCurso,
+    borrarColegio: borrarColegio,
     guardarAsignaciones: guardarAsignaciones,
     encolar: encolar,
     pendientes: pendientes,
     reintentar: reintentar,
     crearProfesor: crearProfesor,
     perfiles: perfiles,
+    actualizarPerfil: actualizarPerfil,
+    quitarProfesor: quitarProfesor,
+    restaurarProfesor: restaurarProfesor,
     probarConexion: probarConexion,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

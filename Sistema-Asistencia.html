@@ -105,6 +105,8 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .btn-accent:hover{background:#276043;border-color:#276043}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--primary-600)}
 .btn-ghost:hover{background:var(--primary-soft)}
+.btn-ghost.danger{color:var(--danger)}
+.btn-ghost.danger:hover{background:var(--danger-soft)}
 .btn-danger{color:var(--danger);border-color:#E7C4C0}
 .btn-danger:hover{background:var(--danger-soft)}
 .btn-sm{padding:6px 11px;min-height:34px;font-size:13px;border-radius:9px}
@@ -2253,6 +2255,21 @@ body.sin-tabs{padding-bottom:0}
     await pedir('cursos?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
   }
 
+  /**
+   * Borra un colegio con todo lo que cuelga de él.
+   * El orden importa: las clases van primero (sus registros se van con ellas),
+   * después estudiantes, cursos y asignaciones, y el colegio al final.
+   * Solo la líder puede hacerlo: las reglas de la base lo impiden al resto.
+   */
+  async function borrarColegio(id) {
+    const q = 'colegio_id=eq.' + encodeURIComponent(id);
+    await pedir('clases?' + q, { method: 'DELETE' });
+    await pedir('estudiantes?' + q, { method: 'DELETE' });
+    await pedir('cursos?' + q, { method: 'DELETE' });
+    await pedir('asignaciones?' + q, { method: 'DELETE' });
+    await pedir('colegios?id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
+  }
+
   async function guardarAsignaciones(colegioId, profesorIds) {
     await pedir('asignaciones?colegio_id=eq.' + encodeURIComponent(colegioId), { method: 'DELETE' });
     if (!profesorIds.length) return;
@@ -2337,12 +2354,44 @@ body.sin-tabs{padding-bottom:0}
     return d;
   }
 
-  async function perfiles() {
+  /**
+   * Cuentas del equipo. Por defecto solo las activas; con `true` trae también
+   * las dadas de baja (para poder restaurarlas).
+   */
+  async function perfiles(incluirInactivos) {
     const p = await pedir('perfiles?select=id,nombre,rol,activo&order=nombre');
-    return (p || []).filter(function (x) { return x.activo !== false; })
+    return (p || [])
+      .filter(function (x) { return incluirInactivos || x.activo !== false; })
       .map(function (x) {
-        return { id: x.id, nombre: x.nombre, rol: x.rol === 'lider' ? 'Líder de proyecto' : 'Profesor' };
+        return {
+          id: x.id,
+          nombre: x.nombre,
+          rol: x.rol === 'lider' ? 'Líder de proyecto' : 'Profesor',
+          activo: x.activo !== false,
+        };
       });
+  }
+
+  /** Cambia el estado de una cuenta (solo la líder puede). */
+  async function actualizarPerfil(id, campos) {
+    await pedir('perfiles?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: campos,
+      prefer: 'return=minimal',
+    });
+  }
+
+  /**
+   * Quita a una persona del equipo sin borrar su historia: la cuenta queda
+   * desactivada, no puede entrar y desaparece de las listas, pero sus clases
+   * se conservan. Se puede restaurar.
+   */
+  async function quitarProfesor(id) {
+    await actualizarPerfil(id, { activo: false });
+  }
+
+  async function restaurarProfesor(id) {
+    await actualizarPerfil(id, { activo: true });
   }
 
   root.NUBE = {
@@ -2359,12 +2408,16 @@ body.sin-tabs{padding-bottom:0}
     guardarColegio: guardarColegio,
     guardarCurso: guardarCurso,
     borrarCurso: borrarCurso,
+    borrarColegio: borrarColegio,
     guardarAsignaciones: guardarAsignaciones,
     encolar: encolar,
     pendientes: pendientes,
     reintentar: reintentar,
     crearProfesor: crearProfesor,
     perfiles: perfiles,
+    actualizarPerfil: actualizarPerfil,
+    quitarProfesor: quitarProfesor,
+    restaurarProfesor: restaurarProfesor,
     probarConexion: probarConexion,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2970,6 +3023,8 @@ body.sin-tabs{padding-bottom:0}
 
   function renderPanel() {
     const P = V.panel;
+    // Si el colegio filtrado ya no existe (por ejemplo, se eliminó), vuelve a "todos".
+    if (P.colegio && !LOGIC.colegio(DB, P.colegio)) { P.colegio = ''; P.curso = ''; }
     const fr = rangoFechas(P.rango);
     const opts = { desde: fr.desde, hasta: fr.hasta, colegioId: P.colegio || undefined, cursoId: P.curso || undefined };
     const k = LOGIC.indicadores(DB, opts);
@@ -3146,7 +3201,9 @@ body.sin-tabs{padding-bottom:0}
      VISTA 3 · ESTUDIANTES
      ================================================================ */
   function renderEstudiantes() {
-    if (!V.estu.colegio) V.estu.colegio = DB.colegios.length ? DB.colegios[0].id : '';
+    if (!V.estu.colegio || !LOGIC.colegio(DB, V.estu.colegio)) {
+      V.estu.colegio = DB.colegios.length ? DB.colegios[0].id : '';
+    }
     const cid = V.estu.colegio;
     const col = LOGIC.colegio(DB, cid);
     const cursos = LOGIC.cursosDeColegio(DB, cid);
@@ -3188,6 +3245,7 @@ body.sin-tabs{padding-bottom:0}
               '<td style="text-align:right;white-space:nowrap">' +
                 '<button class="btn btn-sm btn-ghost" data-ver="' + e.id + '">Ver</button>' +
                 '<button class="btn btn-sm btn-ghost" data-edit="' + e.id + '">Editar</button>' +
+                (esLider() ? '<button class="btn btn-sm btn-ghost danger" data-borrar="' + e.id + '" title="Eliminar estudiante">Quitar</button>' : '') +
               '</td></tr>';
           }).join('') + '</tbody></table>'
           : '<div class="empty"><div class="big">☺</div>Sin estudiantes en esta vista.</div>') +
@@ -3198,6 +3256,35 @@ body.sin-tabs{padding-bottom:0}
     $('#e-add').addEventListener('click', () => modalEditarEstudiante(null));
     cont.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => modalEditarEstudiante(b.dataset.edit)));
     cont.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => modalEstudiante(b.dataset.ver)));
+    cont.querySelectorAll('[data-borrar]').forEach(b =>
+      b.addEventListener('click', () => quitarEstudiante(b.dataset.borrar, renderEstudiantes)));
+  }
+
+  /**
+   * Elimina un estudiante y sus registros de clase.
+   * Solo la líder del proyecto: es un borrado definitivo, sin deshacer.
+   */
+  async function quitarEstudiante(id, despues) {
+    const e = LOGIC.estudiante(DB, id);
+    if (!e) return;
+    if (!esLider()) {
+      toast('Solo la líder del proyecto puede eliminar estudiantes.', 'err');
+      return;
+    }
+    const n = DB.registros.filter(r => r.estudianteId === id).length;
+    const aviso = '¿Eliminar a ' + e.nombre + ' de la lista?\n\n' +
+      'Se borrarán también ' + n + (n === 1 ? ' registro de clase' : ' registros de clase') +
+      '.\nEsta acción no se puede deshacer.';
+    if (!confirm(aviso)) return;
+    if (EN_NUBE) {
+      try { await NUBE.borrarEstudiante(id); }
+      catch (err) { toast('No se pudo eliminar: ' + err.message, 'err'); return; }
+    }
+    DB.estudiantes = DB.estudiantes.filter(x => x.id !== id);
+    DB.registros = DB.registros.filter(r => r.estudianteId !== id);
+    guardarDB();
+    if (typeof despues === 'function') despues();
+    toast('Estudiante eliminado', 'ok');
   }
 
   function modalEditarEstudiante(id) {
@@ -3218,7 +3305,8 @@ body.sin-tabs{padding-bottom:0}
         '</div>' +
         '<p class="small" style="margin:12px 0 0">La lista es la del curso: si un estudiante se integra más adelante, ' +
         'se agrega en ese momento y empieza a aparecer en las clases siguientes.</p>' +
-        (e ? '<hr class="sep"><button class="btn btn-danger btn-sm" id="me-borrar">Quitar de la lista</button>' : ''),
+        (e && esLider() ? '<hr class="sep"><button class="btn btn-danger btn-sm" id="me-borrar">Eliminar estudiante</button>' +
+          '<span class="small" style="margin-left:10px">Se borran también sus registros de clase.</span>' : ''),
       acciones: [
         { label: 'Cancelar', cls: '' },
         { label: e ? 'Guardar' : 'Agregar', cls: 'btn-primary', fn: async () => {
@@ -3252,21 +3340,11 @@ body.sin-tabs{padding-bottom:0}
       const ks = LOGIC.cursosDeColegio(DB, ev.target.value);
       $('#me-cur').innerHTML = ks.map(k => '<option value="' + k.id + '">' + esc(k.nombre) + '</option>').join('');
     });
-    if (e) {
-      $('#me-borrar').addEventListener('click', async () => {
-        const n = DB.registros.filter(r => r.estudianteId === e.id).length;
-        if (!confirm('¿Quitar a ' + e.nombre + ' de la lista? Se borrarán también sus ' + n + ' registros de clase.')) return;
-        if (EN_NUBE) {
-          try { await NUBE.borrarEstudiante(e.id); }
-          catch (err) { toast('No se pudo quitar: ' + err.message, 'err'); return; }
-        }
-        DB.estudiantes = DB.estudiantes.filter(x => x.id !== e.id);
-        DB.registros = DB.registros.filter(r => r.estudianteId !== e.id);
-        guardarDB();
+    if (e && $('#me-borrar')) {
+      $('#me-borrar').addEventListener('click', () => quitarEstudiante(e.id, () => {
         cerrarModal();
         renderEstudiantes();
-        toast('Estudiante quitado de la lista');
-      });
+      }));
     }
   }
 
@@ -3315,6 +3393,8 @@ body.sin-tabs{padding-bottom:0}
      ================================================================ */
   function renderInformes() {
     const I = V.info;
+    // Si el colegio filtrado ya no existe, vuelve a "todos".
+    if (I.colegio && !LOGIC.colegio(DB, I.colegio)) { I.colegio = ''; I.curso = ''; }
     const fr = rangoFechas(I.rango);
     const opts = {
       desde: fr.desde, hasta: fr.hasta,
@@ -3402,6 +3482,9 @@ body.sin-tabs{padding-bottom:0}
      ================================================================ */
   function renderAjustes() {
     const cont = $('#view-ajustes');
+    const lider = esLider();
+    // No se ofrece quitar la cuenta con la que se está trabajando.
+    const yo = (EN_NUBE && NUBE.usuario()) ? NUBE.usuario().id : null;
 
     cont.innerHTML =
       '<div class="card"><div class="card-head"><h2>Profesores</h2><span class="hint">Quiénes hacen las clases</span></div>' +
@@ -3409,12 +3492,16 @@ body.sin-tabs{padding-bottom:0}
         DB.profesores.map(p => '<tr><td><strong>' + esc(p.nombre) + '</strong><div class="small">' + esc(p.rol || 'Profesor') + '</div></td>' +
           '<td class="small">' + DB.asignaciones.filter(a => a.profesorId === p.id)
             .map(a => (LOGIC.colegio(DB, a.colegioId) || {}).nombre).filter(Boolean).join(', ') + '</td>' +
-          '<td style="text-align:right"><button class="btn btn-sm btn-ghost" data-delprof="' + p.id + '">Quitar</button></td></tr>').join('') +
+          '<td style="text-align:right">' +
+            (lider && p.id !== yo ? '<button class="btn btn-sm btn-ghost danger" data-delprof="' + p.id + '" title="Quitar del equipo">Quitar</button>' : '') +
+          '</td></tr>').join('') +
         '</tbody></table></div>' +
         '<div class="card-body" style="border-top:1px solid var(--line)"><div class="row-flex">' +
           '<input type="text" id="a-prof" placeholder="Nombre del profesor o profesora" style="max-width:300px">' +
           '<button class="btn btn-primary" id="a-addprof">Agregar profesor</button>' +
         '</div></div></div>' +
+
+      (EN_NUBE ? '<div id="aj-bajas"></div>' : '') +
 
       '<div class="card"><div class="card-head"><h2>Colegios</h2>' +
         '<span class="hint">Un colegio puede tener varios cursos y varios profesores</span></div>' +
@@ -3424,7 +3511,9 @@ body.sin-tabs{padding-bottom:0}
             esc(k.nombre) + ' <span class="small">(' + DB.estudiantes.filter(e => e.cursoId === k.id).length + ')</span>').join('<br>') || '<em>sin cursos</em>') + '</td>' +
           '<td class="small">' + (LOGIC.profesoresDeColegio(DB, c.id).map(p => esc(p.nombre)).join(', ') || '<em>sin asignar</em>') + '</td>' +
           '<td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-ghost" data-curso="' + c.id + '">+ Curso</button>' +
-          '<button class="btn btn-sm btn-ghost" data-asig="' + c.id + '">Profesores</button></td></tr>').join('') +
+          '<button class="btn btn-sm btn-ghost" data-asig="' + c.id + '">Profesores</button>' +
+          (lider ? '<button class="btn btn-sm btn-ghost danger" data-borrar-col="' + c.id + '" title="Eliminar colegio">Eliminar</button>' : '') +
+          '</td></tr>').join('') +
         '</tbody></table></div>' +
         '<div class="card-body" style="border-top:1px solid var(--line)"><div class="row-flex">' +
           '<input type="text" id="a-col" placeholder="Nombre del colegio" style="max-width:280px">' +
@@ -3483,13 +3572,8 @@ body.sin-tabs{padding-bottom:0}
       e.target.value = v;
       guardarDB(); toast('Plazo de corrección: ' + v + ' días', 'ok');
     });
-    $$('[data-delprof]', cont).forEach(b => b.addEventListener('click', () => {
-      const p = LOGIC.profesor(DB, b.dataset.delprof);
-      if (!confirm('¿Quitar a ' + p.nombre + '? Sus registros anteriores se conservan.')) return;
-      DB.profesores = DB.profesores.filter(x => x.id !== b.dataset.delprof);
-      DB.asignaciones = DB.asignaciones.filter(a => a.profesorId !== b.dataset.delprof);
-      guardarDB(); renderAjustes();
-    }));
+    $$('[data-delprof]', cont).forEach(b => b.addEventListener('click', () => quitarProfesor(b.dataset.delprof)));
+    $$('[data-borrar-col]', cont).forEach(b => b.addEventListener('click', () => modalBorrarColegio(b.dataset.borrarCol)));
     $$('[data-asig]', cont).forEach(b => b.addEventListener('click', () => modalAsignar(b.dataset.asig)));
     $$('[data-curso]', cont).forEach(b => b.addEventListener('click', () => modalCurso(b.dataset.curso)));
     $('#a-rapido').addEventListener('change', e => {
@@ -3555,7 +3639,7 @@ body.sin-tabs{padding-bottom:0}
           }
         });
       }
-      $$('[data-delprof]', cont).forEach(function (b) { b.remove(); });
+      pintarBajas();
       const reset = $('#a-reset');
       if (reset) reset.remove();
       const cargar = $('#a-load');
@@ -3563,6 +3647,141 @@ body.sin-tabs{padding-bottom:0}
       const nota = cont.querySelector('.card:last-child .card-body p:last-child');
       if (nota) nota.textContent = 'Los datos se guardan en la base compartida: lo que registra cada profesor lo ve la líder al instante.';
     }
+  }
+
+  /**
+   * Quita a una persona del equipo.
+   * En modo en uso la cuenta queda desactivada: no aparece en las listas y no
+   * puede entrar, pero las clases que registró se conservan y se puede restaurar.
+   * El borrado definitivo de la cuenta se hace en Authentication → Users.
+   */
+  async function quitarProfesor(id) {
+    if (!esLider()) {
+      toast('Solo la líder del proyecto puede quitar cuentas del equipo.', 'err');
+      return;
+    }
+    const p = LOGIC.profesor(DB, id);
+    if (!p) return;
+    const nColegios = DB.colegios.filter(c => LOGIC.estaAsignado(DB, c.id, id)).length;
+
+    const aviso = '¿Quitar a ' + p.nombre + ' del equipo?\n\n' +
+      (nColegios ? 'Quedará sin acceso a ' + nColegios + (nColegios === 1 ? ' colegio' : ' colegios') + '.\n' : '') +
+      'La cuenta no podrá entrar al sistema.\n' +
+      'Las clases que ya registró se conservan, y se puede restaurar.';
+    if (!confirm(aviso)) return;
+
+    if (!EN_NUBE) {
+      DB.profesores = DB.profesores.filter(x => x.id !== id);
+      DB.asignaciones = DB.asignaciones.filter(a => a.profesorId !== id);
+      guardarDB();
+      renderAjustes();
+      toast('Profesor quitado del equipo', 'ok');
+      return;
+    }
+
+    try { await NUBE.quitarProfesor(id); }
+    catch (err) { toast('No se pudo quitar: ' + err.message, 'err'); return; }
+
+    await cargarDeNube();
+    initSeleccion();
+    renderAjustes();
+    toast('Cuenta dada de baja: ' + p.nombre, 'ok');
+  }
+
+  async function restaurarProfesor(id) {
+    if (!EN_NUBE) return;
+    try { await NUBE.restaurarProfesor(id); }
+    catch (err) { toast('No se pudo restaurar: ' + err.message, 'err'); return; }
+    await cargarDeNube();
+    initSeleccion();
+    renderAjustes();
+    toast('Cuenta restaurada', 'ok');
+  }
+
+  /** Cuentas dadas de baja, con su botón para volver a activarlas. */
+  async function pintarBajas() {
+    const cont = $('#aj-bajas');
+    if (!cont) return;
+    let todas = [];
+    try { todas = await NUBE.perfiles(true); }
+    catch (e) { cont.innerHTML = ''; return; }
+    const bajas = todas.filter(p => p.activo === false);
+    if (!bajas.length) { cont.innerHTML = ''; return; }
+    cont.innerHTML = '<div class="card"><div class="card-head"><h2>Cuentas dadas de baja</h2>' +
+      '<span class="hint">' + bajas.length + '</span></div>' +
+      '<div class="card-body" style="padding:0"><table class="tbl"><tbody>' +
+      bajas.map(p =>
+        '<tr><td><strong>' + esc(p.nombre) + '</strong> <span class="pill low">' + esc(p.rol) + '</span></td>' +
+        '<td style="text-align:right"><button class="btn btn-sm" data-restaurar="' + p.id + '">Restaurar</button></td></tr>'
+      ).join('') +
+      '</tbody></table></div></div>';
+    $$('[data-restaurar]', cont).forEach(b => b.addEventListener('click', () => restaurarProfesor(b.dataset.restaurar)));
+  }
+
+  /**
+   * Elimina un colegio con todo lo que cuelga de él.
+   * Solo la líder del proyecto. Pide escribir el nombre: no hay deshacer.
+   */
+  function modalBorrarColegio(colegioId) {
+    const c = LOGIC.colegio(DB, colegioId);
+    if (!c) return;
+    if (!esLider()) {
+      toast('Solo la líder del proyecto puede eliminar colegios.', 'err');
+      return;
+    }
+
+    const cursos = DB.cursos.filter(k => k.colegioId === colegioId);
+    const ests = DB.estudiantes.filter(e => e.colegioId === colegioId);
+    const sesIds = {};
+    const sesiones = DB.sesiones.filter(s => s.colegioId === colegioId);
+    sesiones.forEach(s => { sesIds[s.id] = true; });
+    const nReg = DB.registros.filter(r => sesIds[r.sesionId]).length;
+
+    abrirModal({
+      titulo: 'Eliminar colegio',
+      cuerpo:
+        '<div class="banner warn" style="margin:0 0 14px"><span class="ic">!</span><div>' +
+          '<strong>Se borrará ' + esc(c.nombre) + ' y todo lo que depende de él.</strong><br>' +
+          'Esta acción no se puede deshacer.</div></div>' +
+        '<ul class="small" style="margin:0 0 16px;padding-left:20px">' +
+          '<li>' + cursos.length + (cursos.length === 1 ? ' curso' : ' cursos') + '</li>' +
+          '<li>' + ests.length + (ests.length === 1 ? ' estudiante' : ' estudiantes') + '</li>' +
+          '<li>' + sesiones.length + (sesiones.length === 1 ? ' clase registrada' : ' clases registradas') + '</li>' +
+          '<li>' + nReg + (nReg === 1 ? ' registro de asistencia y evaluación' : ' registros de asistencia y evaluación') + '</li>' +
+        '</ul>' +
+        '<div class="field"><label>Escribe <strong>' + esc(c.nombre) + '</strong> para confirmar</label>' +
+          '<input type="text" id="bc-nombre" autocomplete="off" placeholder="' + esc(c.nombre) + '"></div>',
+      acciones: [
+        { label: 'Cancelar' },
+        { label: 'Eliminar colegio', cls: 'btn-danger', fn: () => {
+          const t = ($('#bc-nombre').value || '').trim();
+          if (t.toLowerCase() !== c.nombre.trim().toLowerCase()) {
+            toast('Escribe el nombre del colegio tal cual para confirmar', 'err');
+            return false; // la ventana sigue abierta
+          }
+          borrarColegioConfirmado(colegioId, sesIds)
+            .catch(err => toast('No se pudo eliminar: ' + err.message, 'err'));
+          return true;
+        } },
+      ],
+    });
+  }
+
+  /** Borra el colegio y limpia la copia en memoria. */
+  async function borrarColegioConfirmado(colegioId, sesIds) {
+    if (EN_NUBE) await NUBE.borrarColegio(colegioId);
+
+    DB.colegios = DB.colegios.filter(x => x.id !== colegioId);
+    DB.cursos = DB.cursos.filter(k => k.colegioId !== colegioId);
+    DB.estudiantes = DB.estudiantes.filter(e => e.colegioId !== colegioId);
+    DB.sesiones = DB.sesiones.filter(s => s.colegioId !== colegioId);
+    DB.registros = DB.registros.filter(r => !sesIds[r.sesionId]);
+    DB.asignaciones = DB.asignaciones.filter(a => a.colegioId !== colegioId);
+
+    guardarDB();
+    initSeleccion();
+    if (V.vista === 'ajustes') renderAjustes();
+    toast('Colegio eliminado', 'ok');
   }
 
   function modalCurso(colegioId) {

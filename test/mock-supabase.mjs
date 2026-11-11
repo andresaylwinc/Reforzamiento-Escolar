@@ -128,12 +128,23 @@ export function crearServidor(opciones = {}) {
 
       if (req.method === 'DELETE') {
         const antes = datos[tabla].length;
+        const sobran = aplicar(datos[tabla], url.searchParams);
+        // La base real borra en cascada los registros de una clase.
+        if (tabla === 'clases') {
+          const ids = new Set(sobran.map((c) => c.id));
+          datos.registros = datos.registros.filter((r) => !ids.has(r.clase_id));
+        }
         const quedan = datos[tabla].filter((x) => !aplicar([x], url.searchParams).length);
         datos[tabla] = quedan;
         return json(200, { borrados: antes - quedan.length });
       }
 
-      if (req.method === 'PATCH') return json(200, []);
+      if (req.method === 'PATCH') {
+        const b = cuerpo ? JSON.parse(cuerpo) : {};
+        const objetivo = aplicar(datos[tabla], url.searchParams);
+        objetivo.forEach((x) => Object.assign(x, b));
+        return json(200, objetivo);
+      }
       return json(405, { message: 'método no permitido' });
     });
   });

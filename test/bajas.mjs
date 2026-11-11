@@ -3,6 +3,7 @@
    Uso: node test/bajas.mjs */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -13,7 +14,21 @@ const EDGE = [
 if (!EDGE) { console.log('sin navegador: no se encontró Edge'); process.exit(0); }
 
 const PORT = 9355;
-const FILE = pathToFileURL(path.resolve('Sistema-Asistencia.html')).href;
+const ORIGEN = path.resolve('Sistema-Asistencia.html');
+if (!fs.existsSync(ORIGEN)) {
+  console.log('No se encontró Sistema-Asistencia.html. Corre este script desde la carpeta del proyecto.');
+  process.exit(1);
+}
+
+/* Copiamos el HTML a una carpeta temporal SIN config.js.
+   El proyecto real tiene config.js con la conexión a Supabase, así que abrir
+   ese archivo pide iniciar sesión. Sin config.js, la app arranca en modo de
+   prueba con los datos de ejemplo, que es lo que esta prueba necesita. */
+const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), 'bajas-'));
+const copia = path.join(carpeta, 'Sistema-Asistencia.html');
+fs.copyFileSync(ORIGEN, copia);
+const FILE = pathToFileURL(copia).href;
+const limpiar = () => { try { fs.rmSync(carpeta, { recursive: true, force: true }); } catch (e) {} };
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 const profile = path.join(process.env.TEMP, 'dsh-edge-bajas-' + Date.now());
@@ -83,7 +98,14 @@ async function main() {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Page.navigate', { url: FILE });
-  await sleep(2000);
+  await sleep(2200);
+
+  if (await ev('document.body.classList.contains("sin-tabs")')) {
+    console.log('La app abrió la pantalla de entrada en vez de los datos de ejemplo.');
+    console.log('Significa que la copia temporal está tomando la conexión a Supabase.');
+    ws.close(); edge.kill(); limpiar();
+    process.exit(1);
+  }
 
   const irA = async (vista) => {
     await ev('(document.querySelector(\'.tab[data-view="' + vista + '"]\').click(), true)');
@@ -160,11 +182,13 @@ async function main() {
   console.log('\nRESULTADO: ' + ok + ' ok, ' + fail + ' fallas');
   ws.close();
   edge.kill();
+  limpiar();
   process.exit(fail ? 1 : 0);
 }
 
 main().catch(e => {
   console.log('ERROR: ' + e.message);
   try { edge.kill(); } catch (x) {}
+  limpiar();
   process.exit(1);
 });

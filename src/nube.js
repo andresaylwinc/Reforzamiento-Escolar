@@ -169,7 +169,7 @@
 
   /** Trae todo lo que el usuario puede ver y lo deja con la forma del prototipo. */
   async function cargarTodo() {
-    const [colegios, cursos, perfiles, asignaciones, estudiantes, clases, registros, archivos] = await Promise.all([
+    const [colegios, cursos, perfiles, asignaciones, estudiantes, clases, registros] = await Promise.all([
       pedir('colegios?select=*&order=nombre'),
       pedir('cursos?select=*&order=nombre'),
       pedir('perfiles?select=id,nombre,rol,activo&order=nombre'),
@@ -177,8 +177,12 @@
       pedir('estudiantes?select=*&activo=eq.true&order=nombre'),
       pedir('clases?select=*&order=fecha'),
       pedir('registros?select=*&limit=50000'),
-      pedir('archivos?select=*&order=creado_en'),
     ]);
+
+    // La tabla de bitácoras puede no existir en proyectos anteriores.
+    // Si falla, el sistema entra igual y simplemente no muestra adjuntos.
+    const archivos = await pedir('archivos?select=*&order=creado_en')
+      .catch(function () { return []; });
 
     return {
       version: 4,

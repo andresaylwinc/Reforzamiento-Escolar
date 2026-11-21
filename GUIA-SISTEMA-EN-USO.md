@@ -172,6 +172,87 @@ alguien use otro programa para consultar.
 Si el profesor envía una clase sin conexión, la app la guarda en el teléfono y la envía sola
 cuando vuelve la señal. En la barra superior aparece un contador con las clases pendientes.
 
+## Bitácora de la clase (fotos y PDF)
+
+Cada profesor puede adjuntar la foto de la bitácora en papel que llena al terminar la clase.
+
+**Cómo se usa:** se registra la clase, se envía, y debajo aparece la tarjeta
+*Bitácora de la clase* → **Adjuntar foto o PDF**. Se pueden subir varias; quedan como
+miniaturas con un botón *Ver* y otro *Quitar*.
+
+**Cómo funciona por dentro**
+
+- Las **imágenes se reducen en el teléfono antes de subirlas** (máximo 1600 px, JPEG 72%).
+  Una foto de 4 MB queda en 200–400 KB: en el plan gratuito de Supabase caben miles.
+- Se guardan en una carpeta **privada** (`bitacoras`), ordenadas por colegio, curso y fecha.
+  No hay enlace público: la app genera un enlace temporal cada vez que alguien abre el archivo.
+- Solo las personas del proyecto pueden subir o ver: un profesor, solo en sus colegios.
+- Si el archivo se borra desde la app, se borra también del almacenamiento.
+
+**Requisito**: ejecutar una vez `supabase/3-bitacoras.sql` en el SQL Editor (crea la tabla y la
+carpeta privada). Si instalaste el esquema después de esta versión, ya viene incluido.
+
+> Subir una foto necesita conexión. La clase se puede guardar sin señal (queda en cola) y la
+> foto se adjunta después, al volver al colegio o a la casa.
+
+## Mantener dos sistemas (principal y copia)
+
+Cuando haya dos despliegues del mismo sistema (por ejemplo, el equipo original y un segundo
+equipo que usa los mismos colegios y estudiantes), en el computador quedan dos carpetas:
+
+| Carpeta | Qué es |
+|---|---|
+| `C:\Users\HP\Reforzamiento-Escolar` | **Principal**: donde se hacen los cambios al sistema |
+| `C:\Users\HP\Reforzamiento-Escolar-2` | **Copia**: mismo programa, otra base de datos |
+
+Cada una tiene **su propio `config.js`** (su propia base) y **su propio repositorio**.
+
+### Para actualizar las dos
+
+1. Haz los cambios en la carpeta **principal**.
+2. Doble clic en **`sincronizar-copias.cmd`** (está en la carpeta principal).
+   Copia el programa a la copia y **no toca** el `config.js` de ninguna.
+3. En GitHub Desktop: abre cada carpeta por separado, haz commit y push en cada una.
+
+> El sincronizador va en un solo sentido: principal → copia. Si editas algo directamente en la
+> copia, la próxima sincronización lo reemplaza. Los cambios se hacen siempre en la principal.
+
+## Cambiar la contraseña de una cuenta
+
+Cuando alguien la olvide, la líder no necesita entrar a Supabase:
+
+1. **Ajustes → Profesores**.
+2. En la fila de la persona, botón **Clave**.
+3. Aparece una contraseña temporal propuesta (puedes cambiarla o usar *Generar otra*).
+4. **Guardar contraseña** y entrégasela en persona.
+
+Funciona también para tu propia cuenta. La persona puede cambiarla después desde su perfil
+(si quieres esa opción, se agrega).
+
+## Clonar el sistema para otro equipo
+
+Sirve cuando se quiere **el mismo listado de estudiantes con otro equipo de profesores**, con
+registros independientes. Son dos sistemas separados: lo que registra uno no aparece en el otro.
+
+1. **Proyecto nuevo en Supabase** (vacío).
+2. Ejecuta `supabase/1-esquema.sql` (no la semilla).
+3. Crea tu cuenta y déjala como líder (paso 3 de esta guía).
+4. Despliega otra vez la función `crear-profesor` en ese proyecto.
+5. **Copia el sitio**: crea un repositorio nuevo con los mismos archivos, cambia
+   `config.js` por la URL y la clave del proyecto nuevo, y activa Pages. Tendrás una segunda
+   dirección.
+6. En el sistema **original**: **Ajustes → Datos → Exportar estructura (.json)**.
+   Ese archivo trae colegios, cursos y estudiantes (sin clases ni registros).
+7. En el sistema **nuevo**: **Ajustes → Datos → Importar estructura** y elige el archivo.
+8. Crea los profesores del equipo nuevo y asígnalos a sus colegios.
+
+Los dos sistemas quedan independientes desde ese momento.
+
+> Si en cambio quieres que **compartan** los mismos registros (dos equipos trabajando sobre las
+> mismas clases), no clones nada: agrega los profesores nuevos al mismo proyecto y asígnalos a
+> los colegios. Todos verán los mismos estudiantes y las mismas clases, con registro de quién
+> anotó cada una.
+
 ## Problemas comunes
 
 | Mensaje | Qué hacer |

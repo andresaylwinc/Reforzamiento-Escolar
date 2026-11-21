@@ -377,3 +377,14 @@ body.sin-tabs{padding-bottom:0}
   .userbox{border:0;padding:0;margin:0}
   .userbox .uname{display:none}
 }
+
+/* --------------------------- bitácoras ---------------------------- */
+.bit-bar{margin-bottom:10px}
+.bitacoras{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.bit-item{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.bit-thumb{height:110px;background:#EEF2F6 center/cover no-repeat;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.bit-thumb.con-imagen{font-size:0}
+.bit-meta{padding:7px 9px 3px}
+.bit-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bit-acc{display:flex;gap:4px;padding:6px 9px 9px;margin-top:auto}

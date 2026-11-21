@@ -99,6 +99,24 @@ await sleep(1500);
 check('no duplica la clase', mock.datos.clases.length === 1, mock.datos.clases.length);
 check('no duplica los registros', mock.datos.registros.length === 2, mock.datos.registros.length);
 
+console.log('== Bitácora ==');
+check('muestra la tarjeta de bitácora', await ev('!!document.querySelector("#bitacora-card") && document.querySelector("#bitacora-card").style.display !== "none"'));
+check('ofrece adjuntar archivo', (await txt('#bitacora')).indexOf('Adjuntar') >= 0, await txt('#bitacora'));
+const subido = await ev(`(async function(){
+  const s = window.__app.S;
+  const blob = new Blob([new Uint8Array([137,80,78,71,13,10,26,10])], {type:'image/png'});
+  const r = await window.NUBE.subirArchivo({claseId: s.editando.id, colegioId: s.colegioId, cursoId: s.cursoId, fecha: s.fecha, archivo: blob, nombre: 'bitacora.png', tipo: 'image/png'});
+  window.__app.DB().archivos.push(r);
+  return r.ruta;
+})()`);
+check('el archivo llega al almacenamiento', !!subido && mock.binarios.has(subido), subido);
+await ev('(document.querySelector("[data-view=panel]").click(), true)');
+await sleep(400);
+await ev('(document.querySelector("[data-view=registrar]").click(), true)');
+await sleep(700);
+check('la bitácora muestra el archivo adjunto', await ev('document.querySelectorAll("#bitacora .bit-item").length') === 1,
+  await ev('document.querySelectorAll("#bitacora .bit-item").length'));
+
 console.log('== Estudiantes ==');
 await ev('(document.querySelector("[data-view=estudiantes]").click(), true)');
 await sleep(600);
@@ -122,6 +140,57 @@ check('la cuenta aparece en la lista', (await txt('#view-ajustes')).indexOf('Pro
 await ev('(function(){ document.querySelector("#np-nombre").value="Otra"; document.querySelector("#np-email").value="nuevo@ejemplo.cl"; document.querySelector("#np-pass").value="clave12345"; document.querySelector("#np-crear").click(); return true; })()');
 await sleep(1400);
 check('avisa si el correo ya existe', (await txt('#toast')).indexOf('Ya existe') >= 0, await txt('#toast'));
+
+console.log('== Cambiar la contraseña desde la app ==');
+const idNuevo = mock.datos.perfiles.find(p => p.email === 'nuevo@ejemplo.cl').id;
+await ev(`(document.querySelector('[data-clave="` + idNuevo + `"]').click(), true)`);
+await sleep(600);
+check('abre el formulario de contraseña', await ev('!!document.querySelector("#cl-pass")'));
+check('propone una contraseña al azar', (await ev('document.querySelector("#cl-pass").value.length')) >= 8);
+await ev('(function(){ document.querySelector("#cl-pass").value="nuevaClave99"; const b=[...document.querySelectorAll("#modal .foot .btn")].find(x=>/Guardar contraseña/.test(x.textContent)); b.click(); return true; })()');
+await sleep(1600);
+check('la contraseña se actualizó en la base', mock.datos.perfiles.find(p => p.id === idNuevo).clave === 'nuevaClave99',
+  mock.datos.perfiles.find(p => p.id === idNuevo).clave);
+
+await ev('(document.querySelector("#cl-pass") ? true : true)');
+
+console.log('== Clonar: exportar e importar estructura ==');
+const estructura = JSON.parse(await ev('JSON.stringify(window.__app.estructuraActual())'));
+check('exporta los colegios', estructura.colegios.length === mock.datos.colegios.length, estructura.colegios.length);
+check('exporta los cursos', estructura.cursos.length === mock.datos.cursos.length, estructura.cursos.length);
+check('exporta los estudiantes', estructura.estudiantes.length === mock.datos.estudiantes.length, estructura.estudiantes.length);
+check('no lleva clases ni registros', estructura.clases === undefined && estructura.registros === undefined);
+check('cada curso apunta a su colegio', estructura.cursos.every(k => !!estructura.colegios.find(c => c.id === k.colegioId)));
+check('cada estudiante apunta a su curso', estructura.estudiantes.every(e => !!estructura.cursos.find(k => k.id === e.cursoId)));
+
+// importar en un sistema vacío (se simula con el mismo servidor)
+const antesCol = mock.datos.colegios.length;
+const antesEst = mock.datos.estudiantes.length;
+const paquete = {
+  tipo: 'estructura-reforzamiento', version: 1,
+  colegios: [
+    { id: 'cN1', nombre: 'Colegio Nuevo 1', comuna: 'Otra', color: '#123456' },
+    { id: 'cN2', nombre: 'Colegio Nuevo 2', comuna: 'Otra', color: '#654321' },
+  ],
+  cursos: [
+    { id: 'kN1', colegioId: 'cN1', nombre: 'Curso 1' },
+    { id: 'kN2', colegioId: 'cN2', nombre: 'Curso 1' },
+  ],
+  estudiantes: [
+    { id: 'eN1', nombre: 'Alumno Uno', colegioId: 'cN1', cursoId: 'kN1' },
+    { id: 'eN2', nombre: 'Alumno Dos', colegioId: 'cN1', cursoId: 'kN1' },
+    { id: 'eN3', nombre: 'Alumno Tres', colegioId: 'cN2', cursoId: 'kN2' },
+  ],
+};
+await ev('window.confirm = function(){ return true; }; true');
+await ev('window.__app.importarEstructura(' + JSON.stringify(paquete) + '); true');
+await sleep(2500);
+check('importa los colegios', mock.datos.colegios.length === antesCol + 2, mock.datos.colegios.length);
+check('importa los cursos', mock.datos.cursos.filter(k => k.id.indexOf('kN') === 0).length === 2);
+check('importa los estudiantes', mock.datos.estudiantes.length === antesEst + 3, mock.datos.estudiantes.length);
+check('respeta el curso de cada estudiante',
+  mock.datos.estudiantes.find(e => e.id === 'eN3').curso_id === 'kN2');
+check('la app refresca la lista', (await txt('#view-ajustes')).indexOf('Colegio Nuevo 1') >= 0);
 
 fs.mkdirSync('Ejemplos/capturas', { recursive: true });
 await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 1000, deviceScaleFactor: 2, mobile: true });

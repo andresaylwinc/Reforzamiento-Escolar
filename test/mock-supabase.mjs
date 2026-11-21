@@ -3,6 +3,8 @@
 import http from 'node:http';
 
 export function crearServidor(opciones = {}) {
+  const binarios = new Map();
+
   const datos = {
     perfiles: [
       { id: 'u-lider', nombre: 'Líder', rol: 'lider', activo: true },
@@ -27,6 +29,7 @@ export function crearServidor(opciones = {}) {
     ],
     clases: [],
     registros: [],
+    archivos: [],
   };
 
   // Con { vacio: true } el servidor parte sin colegios, cursos ni estudiantes,
@@ -64,9 +67,11 @@ export function crearServidor(opciones = {}) {
   const servidor = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const ruta = url.pathname;
-    let cuerpo = '';
-    req.on('data', (c) => { cuerpo += c; });
+    const trozos = [];
+    req.on('data', (c) => { trozos.push(c); });
     req.on('end', () => {
+      const cuerpoBuf = Buffer.concat(trozos);
+      const cuerpo = cuerpoBuf.toString('utf8');
       const json = (code, obj) => {
         res.writeHead(code, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
         res.end(obj === undefined ? '' : JSON.stringify(obj));
@@ -75,6 +80,30 @@ export function crearServidor(opciones = {}) {
       if (req.method === 'OPTIONS') {
         res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*', 'Access-Control-Allow-Private-Network': 'true' });
         res.end(); return;
+      }
+
+      // ---- Storage (bitácoras) ----
+      if (ruta.indexOf('/storage/v1/object/sign/bitacoras/') === 0) {
+        if (req.method === 'POST') {
+          const camino = ruta.replace('/storage/v1/object/sign/bitacoras/', '');
+          return json(200, { signedURL: '/object/sign/bitacoras/' + camino + '?token=mock' });
+        }
+        const camino = decodeURIComponent(ruta.replace('/storage/v1/object/sign/bitacoras/', ''));
+        const item = binarios.get(camino);
+        if (!item) return json(404, { message: 'no encontrado' });
+        res.writeHead(200, { 'Content-Type': item.tipo || 'application/octet-stream', 'Access-Control-Allow-Origin': '*' });
+        return res.end(item.datos);
+      }
+      if (ruta.indexOf('/storage/v1/object/bitacoras/') === 0) {
+        const camino = decodeURIComponent(ruta.replace('/storage/v1/object/bitacoras/', ''));
+        if (req.method === 'POST') {
+          binarios.set(camino, { datos: cuerpoBuf, tipo: req.headers['content-type'] || '' });
+          return json(200, { Key: camino });
+        }
+        if (req.method === 'DELETE') {
+          binarios.delete(camino);
+          return json(200, {});
+        }
       }
 
       // ---- Auth ----
@@ -94,6 +123,14 @@ export function crearServidor(opciones = {}) {
       if (ruta === '/functions/v1/crear-profesor') {
         if (!req.headers.authorization) return json(401, { error: 'Sin sesión' });
         const b = cuerpo ? JSON.parse(cuerpo) : {};
+        if (b.accion === 'clave') {
+          if (!b.usuarioId) return json(400, { error: 'Falta indicar la cuenta' });
+          if (!b.password || String(b.password).length < 8) return json(400, { error: 'La contraseña debe tener al menos 8 caracteres' });
+          const perfil = datos.perfiles.find((p) => p.id === b.usuarioId);
+          if (!perfil) return json(404, { error: 'Esa cuenta no existe' });
+          perfil.clave = b.password;
+          return json(200, { ok: true, id: b.usuarioId });
+        }
         if (!b.nombre || !b.email || !b.password) return json(400, { error: 'Faltan el nombre, el correo o la contraseña' });
         if (String(b.password).length < 8) return json(400, { error: 'La contraseña debe tener al menos 8 caracteres' });
         if (datos.perfiles.some((p) => p.email === b.email)) return json(409, { error: 'Ya existe una cuenta con ese correo' });
@@ -140,6 +177,7 @@ export function crearServidor(opciones = {}) {
 
   return {
     datos,
+    binarios,
     escuchar(puerto = 0) {
       return new Promise((resolve) => {
         servidor.listen(puerto, '127.0.0.1', () => resolve('http://127.0.0.1:' + servidor.address().port));

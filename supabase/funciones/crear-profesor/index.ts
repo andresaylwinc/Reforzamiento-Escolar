@@ -63,11 +63,28 @@ Deno.serve(async (req) => {
   }
 
   // 3. Datos
-  let cuerpo: { nombre?: string; email?: string; password?: string };
+  let cuerpo: { accion?: string; nombre?: string; email?: string; password?: string; usuarioId?: string };
   try {
     cuerpo = await req.json();
   } catch {
     return respuesta(400, { error: 'Datos inválidos' });
+  }
+
+  const accion = String(cuerpo.accion || 'crear');
+
+  // Camino alternativo: cambiar la contraseña de una cuenta existente
+  if (accion === 'clave') {
+    const usuarioId = String(cuerpo.usuarioId || '');
+    const nueva = String(cuerpo.password || '');
+    if (!usuarioId) return respuesta(400, { error: 'Falta indicar la cuenta' });
+    if (nueva.length < 8) return respuesta(400, { error: 'La contraseña debe tener al menos 8 caracteres' });
+
+    const { data: existe } = await admin.auth.admin.getUserById(usuarioId);
+    if (!existe?.user) return respuesta(404, { error: 'Esa cuenta no existe' });
+
+    const { error: errorClave } = await admin.auth.admin.updateUserById(usuarioId, { password: nueva });
+    if (errorClave) return respuesta(400, { error: errorClave.message });
+    return respuesta(200, { ok: true, id: usuarioId });
   }
 
   const nombre = String(cuerpo.nombre || '').trim();
@@ -84,7 +101,7 @@ Deno.serve(async (req) => {
     return respuesta(400, { error: 'La contraseña debe tener al menos 8 caracteres' });
   }
 
-  // 4. Crear la cuenta ya confirmada
+  // 4. Crear la cuenta ya confirmada (acción por defecto)
   const { data: creado, error: errorCrear } = await admin.auth.admin.createUser({
     email,
     password,

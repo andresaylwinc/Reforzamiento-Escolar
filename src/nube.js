@@ -169,7 +169,7 @@
 
   /** Trae todo lo que el usuario puede ver y lo deja con la forma del prototipo. */
   async function cargarTodo() {
-    const [colegios, cursos, perfiles, asignaciones, estudiantes, clases, registros] = await Promise.all([
+    const [colegios, cursos, perfiles, asignaciones, estudiantes, clases, registros, archivos] = await Promise.all([
       pedir('colegios?select=*&order=nombre'),
       pedir('cursos?select=*&order=nombre'),
       pedir('perfiles?select=id,nombre,rol,activo&order=nombre'),
@@ -177,6 +177,7 @@
       pedir('estudiantes?select=*&activo=eq.true&order=nombre'),
       pedir('clases?select=*&order=fecha'),
       pedir('registros?select=*&limit=50000'),
+      pedir('archivos?select=*&order=creado_en'),
     ]);
 
     return {
@@ -197,6 +198,12 @@
       }),
       sesiones: (clases || []).map(aCamelClase),
       registros: (registros || []).map(aCamelRegistro),
+      archivos: (archivos || []).map(function (a) {
+        return {
+          id: a.id, claseId: a.clase_id, nombre: a.nombre, ruta: a.ruta,
+          tipo: a.tipo || '', tamano: a.tamano || 0, creadoEn: a.creado_en,
+        };
+      }),
       etiquetas: ['Comprensión lectora', 'Cálculo y operatoria', 'Participación', 'Conducta',
         'Motivación', 'Asistencia irregular', 'Apoyo familiar', 'Logro destacado'],
       ajustes: { modoRapido: true, diasEdicion: 30 },
@@ -341,8 +348,73 @@
     }
   }
 
+  /* -------------------------- Bitácoras ------------------------ */
+  const BUCKET = 'bitacoras';
+
+  async function subirArchivo(datos) {
+    const s = await asegurar();
+    if (!s) throw new Error('La sesión venció. Vuelve a entrar.');
+    const ext = (String(datos.nombre || '').split('.').pop() || 'jpg')
+      .toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+    const id = 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const ruta = datos.colegioId + '/' + datos.cursoId + '/' + datos.fecha + '/' + id + '.' + ext;
+
+    const r = await fetch(urlBase + '/storage/v1/object/' + BUCKET + '/' + ruta, {
+      method: 'POST',
+      headers: {
+        apikey: clave,
+        Authorization: 'Bearer ' + s.access_token,
+        'Content-Type': datos.tipo || 'application/octet-stream',
+        'x-upsert': 'false',
+      },
+      body: datos.archivo,
+    });
+    if (!r.ok) throw new Error(await mensajeError(r));
+
+    await pedir('archivos', {
+      method: 'POST',
+      body: {
+        id: id, clase_id: datos.claseId, nombre: datos.nombre, ruta: ruta,
+        tipo: datos.tipo || '', tamano: (datos.archivo && datos.archivo.size) || 0,
+        subido_por: s.usuario.id,
+      },
+      prefer: 'return=minimal',
+    });
+
+    return {
+      id: id, claseId: datos.claseId, nombre: datos.nombre, ruta: ruta,
+      tipo: datos.tipo || '', tamano: (datos.archivo && datos.archivo.size) || 0,
+    };
+  }
+
+  async function urlArchivo(ruta, segundos) {
+    const s = await asegurar();
+    if (!s) return null;
+    const r = await fetch(urlBase + '/storage/v1/object/sign/' + BUCKET + '/' + ruta, {
+      method: 'POST',
+      headers: { apikey: clave, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expiresIn: segundos || 3600 }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json().catch(function () { return null; });
+    if (!d || !d.signedURL) return null;
+    return urlBase + '/storage/v1' + d.signedURL;
+  }
+
+  async function borrarArchivo(archivo) {
+    const s = await asegurar();
+    if (!s) throw new Error('La sesión venció. Vuelve a entrar.');
+    await pedir('archivos?id=eq.' + encodeURIComponent(archivo.id), { method: 'DELETE' });
+    try {
+      await fetch(urlBase + '/storage/v1/object/' + BUCKET + '/' + archivo.ruta, {
+        method: 'DELETE',
+        headers: { apikey: clave, Authorization: 'Bearer ' + s.access_token },
+      });
+    } catch (e) { /* el archivo ya no estaba */ }
+  }
+
   /* -------------------- Cuentas de profesores ------------------ */
-  async function crearProfesor(datos) {
+  async function llamarFuncion(datos) {
     const s = await asegurar();
     if (!s) throw new Error('La sesión venció. Vuelve a entrar.');
     let r;
@@ -364,8 +436,16 @@
     if (r.status === 404) {
       throw new Error('Falta desplegar la función "crear-profesor" en Supabase. Revisa la guía.');
     }
-    if (!r.ok) throw new Error((d && d.error) || 'No se pudo crear la cuenta (' + r.status + ').');
+    if (!r.ok) throw new Error((d && d.error) || 'No se pudo completar la operación (' + r.status + ').');
     return d;
+  }
+
+  async function crearProfesor(datos) {
+    return llamarFuncion(Object.assign({ accion: 'crear' }, datos));
+  }
+
+  async function cambiarClave(usuarioId, password) {
+    return llamarFuncion({ accion: 'clave', usuarioId: usuarioId, password: password });
   }
 
   async function perfiles() {
@@ -395,6 +475,10 @@
     pendientes: pendientes,
     reintentar: reintentar,
     crearProfesor: crearProfesor,
+    cambiarClave: cambiarClave,
+    subirArchivo: subirArchivo,
+    urlArchivo: urlArchivo,
+    borrarArchivo: borrarArchivo,
     perfiles: perfiles,
     probarConexion: probarConexion,
   };

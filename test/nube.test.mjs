@@ -122,6 +122,23 @@ check('reenvía lo pendiente', enviadas === 1, enviadas);
 check('la cola queda vacía', NUBE.pendientes() === 0, NUBE.pendientes());
 check('la clase llegó al servidor', servidor2.datos.clases.length === 1, servidor2.datos.clases.length);
 
+console.log('== Bitácora de la clase ==');
+const idClaseBit = 's-k1-2026-11-10';
+const bytesPng = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
+const archivoSubido = await NUBE.subirArchivo({
+  claseId: idClaseBit, colegioId: 'c1', cursoId: 'k1', fecha: '2026-11-10',
+  archivo: new Blob([bytesPng], { type: 'image/png' }), nombre: 'bitacora.png', tipo: 'image/png',
+});
+check('registra el archivo en la base', servidor2.datos.archivos.length === 1, servidor2.datos.archivos.length);
+check('el archivo queda en la carpeta del colegio', archivoSubido.ruta.indexOf('c1/k1/2026-11-10/') === 0, archivoSubido.ruta);
+check('el binario llegó al almacenamiento', servidor2.binarios.has(archivoSubido.ruta));
+check('guarda el tamaño', servidor2.datos.archivos[0].tamano === bytesPng.length, servidor2.datos.archivos[0].tamano);
+const urlFirmada = await NUBE.urlArchivo(archivoSubido.ruta, 60);
+check('genera un enlace para verlo', !!urlFirmada && urlFirmada.indexOf('token=mock') > 0, urlFirmada);
+await NUBE.borrarArchivo(archivoSubido);
+check('quita el archivo de la base', servidor2.datos.archivos.length === 0, servidor2.datos.archivos.length);
+check('quita el binario del almacenamiento', servidor2.binarios.has(archivoSubido.ruta) === false);
+
 console.log('== Salir ==');
 await NUBE.salir();
 check('borra la sesión local', !almacen.getItem('reforzamiento.sesion'));

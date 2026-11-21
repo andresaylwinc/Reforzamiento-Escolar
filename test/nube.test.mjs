@@ -102,6 +102,38 @@ await NUBE.guardarAsignaciones('c2', ['u-lider', 'u-profe']);
 check('reemplaza las asignaciones', servidor.datos.asignaciones.filter(a => a.colegio_id === 'c2').length === 2,
   servidor.datos.asignaciones);
 
+console.log('== Eliminar un colegio ==');
+// c1 tiene 2 cursos, 2 estudiantes, 1 asignación y clases con registros.
+const clasesC1 = servidor.datos.clases.filter(c => c.colegio_id === 'c1').map(c => c.id);
+check('c1 tiene clases antes de borrar', clasesC1.length === 2, clasesC1.length);
+await NUBE.borrarColegio('c1');
+check('borra el colegio', !servidor.datos.colegios.some(c => c.id === 'c1'));
+check('borra sus cursos', servidor.datos.cursos.filter(k => k.colegio_id === 'c1').length === 0);
+check('borra sus estudiantes', servidor.datos.estudiantes.filter(e => e.colegio_id === 'c1').length === 0);
+check('borra sus clases', servidor.datos.clases.filter(c => c.colegio_id === 'c1').length === 0);
+check('borra sus registros',
+  servidor.datos.registros.filter(r => clasesC1.includes(r.clase_id)).length === 0,
+  servidor.datos.registros.length);
+check('borra sus asignaciones', servidor.datos.asignaciones.filter(a => a.colegio_id === 'c1').length === 0);
+check('no toca el otro colegio', servidor.datos.colegios.some(c => c.id === 'c2'));
+check('no toca a los estudiantes del otro colegio',
+  servidor.datos.estudiantes.some(e => e.colegio_id === 'c2'));
+
+console.log('== Quitar y restaurar una cuenta ==');
+await NUBE.quitarProfesor('u-profe');
+check('la cuenta queda inactiva', servidor.datos.perfiles.find(p => p.id === 'u-profe').activo === false);
+const todos = await NUBE.perfiles(true);
+check('perfiles(true) la sigue mostrando', todos.some(p => p.id === 'u-profe'), todos.length);
+const soloActivos = await NUBE.perfiles();
+check('perfiles() la deja fuera', !soloActivos.some(p => p.id === 'u-profe'), soloActivos.length);
+const dbSin = await NUBE.cargarTodo();
+check('desaparece de la lista de profesores', !dbSin.profesores.some(p => p.id === 'u-profe'),
+  dbSin.profesores.map(p => p.id));
+await NUBE.restaurarProfesor('u-profe');
+check('vuelve a estar activa', servidor.datos.perfiles.find(p => p.id === 'u-profe').activo === true);
+const dbCon = await NUBE.cargarTodo();
+check('vuelve a la lista de profesores', dbCon.profesores.some(p => p.id === 'u-profe'));
+
 console.log('== Sin conexión ==');
 await servidor.cerrar();
 let fallo = null;

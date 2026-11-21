@@ -97,6 +97,8 @@ select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns=
 .btn-accent:hover{background:#276043;border-color:#276043}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--primary-600)}
 .btn-ghost:hover{background:var(--primary-soft)}
+.btn-ghost.danger{color:var(--danger)}
+.btn-ghost.danger:hover{background:var(--danger-soft)}
 .btn-danger{color:var(--danger);border-color:#E7C4C0}
 .btn-danger:hover{background:var(--danger-soft)}
 .btn-sm{padding:6px 11px;min-height:34px;font-size:13px;border-radius:9px}

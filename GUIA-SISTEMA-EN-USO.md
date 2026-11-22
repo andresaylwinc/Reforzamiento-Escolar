@@ -141,7 +141,7 @@ Desde ese momento, lo que registre cada profesor aparece en tu panel al instante
 
 **El profesor**
 1. Abre el enlace en el celular y entra.
-2. Elige fecha, colegio, curso y confirma quién dictó la clase.
+2. Elige fecha, colegio, **taller** (9.1 a 14.2) y confirma quién dictó la clase. La lista de estudiantes es la del colegio.
 3. Marca P/A, registra la evaluación (0 = sin nota) y agrega observaciones si corresponde.
 4. **Enviar registro**.
 
@@ -161,7 +161,8 @@ solo la líder puede modificarla (la app lo avisa y la base lo impide).
 | Ver estudiantes de sus colegios | Sí | Todos |
 | Registrar y corregir sus clases | Sí (30 días) | Sí (siempre) |
 | Agregar o quitar estudiantes | Sí, en sus colegios | Sí, en todos |
-| Crear colegios y cursos | No | Sí |
+| Crear colegios | No | Sí |
+| Elegir el taller de la clase | Sí | Sí |
 | Ver todos los colegios y el panel completo | No | Sí |
 
 Estas reglas no están solo en la pantalla: están en la base de datos, así que valen aunque
@@ -184,7 +185,7 @@ miniaturas con un botón *Ver* y otro *Quitar*.
 
 - Las **imágenes se reducen en el teléfono antes de subirlas** (máximo 1600 px, JPEG 72%).
   Una foto de 4 MB queda en 200–400 KB: en el plan gratuito de Supabase caben miles.
-- Se guardan en una carpeta **privada** (`bitacoras`), ordenadas por colegio, curso y fecha.
+- Se guardan en una carpeta **privada** (`bitacoras`), ordenadas por colegio y fecha.
   No hay enlace público: la app genera un enlace temporal cada vez que alguien abre el archivo.
 - Solo las personas del proyecto pueden subir o ver: un profesor, solo en sus colegios.
 - Si el archivo se borra desde la app, se borra también del almacenamiento.

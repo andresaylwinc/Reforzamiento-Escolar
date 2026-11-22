@@ -47,30 +47,30 @@ check('por curso suma los registros', LOGIC.porCurso(db, opts).reduce((a, c) => 
 console.log('== Validación ==');
 const est = LOGIC.estudiantesDeCurso(db, 'k1');
 const sinEval = LOGIC.validarRegistro({
-  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', profesorId: 'p2', realizada: true,
+  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', taller: '9.1', profesorId: 'p2', realizada: true,
   filas: [{ estudianteId: est[0].id, nombre: est[0].nombre, asistencia: 'P', evaluacion: null }],
 });
 check('exige evaluación para el presente', sinEval.length === 1 && /evaluación/.test(sinEval[0]), sinEval);
 const conCero = LOGIC.validarRegistro({
-  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', profesorId: 'p2', realizada: true,
+  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', taller: '9.1', profesorId: 'p2', realizada: true,
   filas: [{ estudianteId: est[0].id, nombre: est[0].nombre, asistencia: 'A', evaluacion: 0 }],
 });
 check('el 0 es un valor válido, no un dato faltante', conCero.length === 0, conCero);
 const fueraRango = LOGIC.validarRegistro({
-  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', profesorId: 'p2', realizada: true,
+  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', taller: '9.1', profesorId: 'p2', realizada: true,
   filas: [{ estudianteId: est[0].id, nombre: est[0].nombre, asistencia: 'P', evaluacion: 5 }],
 });
 check('rechaza evaluación fuera de 0-3', fueraRango.length === 1, fueraRango);
 
 console.log('== Guardado ==');
 const nuevo = LOGIC.guardarSesion(db, {
-  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', profesorId: 'p2', realizada: true,
+  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', taller: '9.1', profesorId: 'p2', realizada: true,
   filas: est.map((e, i) => ({ estudianteId: e.id, nombre: e.nombre, asistencia: i === 0 ? 'A' : 'P', evaluacion: i === 0 ? 0 : 3, observacion: '' })),
 });
 check('crea la clase del curso', nuevo.nuevo && nuevo.creados === est.length, nuevo.creados);
 check('el ausente se guarda con 0', db.registros.find(r => r.estudianteId === est[0].id && r.sesionId === nuevo.sesion.id).evaluacion === 0);
 const dup = LOGIC.guardarSesion(db, {
-  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', profesorId: 'p2', realizada: true,
+  fecha: '2026-11-10', colegioId: 'c1', cursoId: 'k1', taller: '9.1', profesorId: 'p2', realizada: true,
   filas: est.map(e => ({ estudianteId: e.id, nombre: e.nombre, asistencia: 'P', evaluacion: 2, observacion: '' })),
 });
 check('reenviar actualiza sin duplicar', !dup.nuevo && dup.creados === 0, dup);

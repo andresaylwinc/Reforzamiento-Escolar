@@ -97,14 +97,14 @@
 
   /* ---------------------------- Estado ------------------------- */
   const S = {
-    fecha: hoyISO(), colegioId: '', cursoId: '', profesorId: '',
+    fecha: hoyISO(), colegioId: '', cursoId: '', taller: '', profesorId: '',
     realizada: true, motivo: '', filas: {}, obsAbierta: {},
     busqueda: '', intentado: false, editando: null, ultimo: null, modoLider: false,
   };
   const V = {
     vista: 'registrar',
-    panel: { rango: '30', colegio: '', curso: '' },
-    info: { rango: '30', colegio: '', curso: '', etiqueta: '' },
+    panel: { rango: '30', colegio: '', taller: '' },
+    info: { rango: '30', colegio: '', taller: '', etiqueta: '' },
     estu: { colegio: '', curso: '' },
   };
 
@@ -141,11 +141,28 @@
       '<option value="' + c.id + '"' + (c.id === S.colegioId ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('');
   }
 
-  function opcionesCurso() {
-    const lista = LOGIC.cursosDeColegio(DB, S.colegioId);
-    if (!lista.length) return '<option value="">Sin cursos registrados</option>';
-    return lista.map(k =>
-      '<option value="' + k.id + '"' + (k.id === S.cursoId ? ' selected' : '') + '>' + esc(k.nombre) + '</option>').join('');
+  // Talleres disponibles: 9.1 a 14.2, más cualquiera ya registrado antes.
+  const TALLERES = ['9.1', '9.2', '10.1', '10.2', '11.1', '11.2',
+    '12.1', '12.2', '13.1', '13.2', '14.1', '14.2'];
+
+  function listaTalleres() {
+    const usados = [];
+    (DB.sesiones || []).forEach(function (s) { if (s.taller && usados.indexOf(s.taller) < 0) usados.push(s.taller); });
+    const extra = usados.filter(function (t) { return TALLERES.indexOf(t) < 0; }).sort();
+    return TALLERES.concat(extra);
+  }
+
+  function opcionesTaller() {
+    return '<option value="">Elige el taller…</option>' + listaTalleres().map(function (t) {
+      return '<option value="' + esc(t) + '"' + (t === S.taller ? ' selected' : '') + '>' + esc(t) + '</option>';
+    }).join('');
+  }
+
+  /** Último taller usado en ese colegio, para no elegirlo cada vez. */
+  function ultimoTaller(colegioId) {
+    const con = (DB.sesiones || []).filter(function (s) { return s.colegioId === colegioId && s.taller; })
+      .sort(function (a, b) { return a.fecha < b.fecha ? 1 : -1; });
+    return con.length ? con[0].taller : '';
   }
 
   function opcionesProfesor() {
@@ -162,17 +179,18 @@
   }
 
   function initSeleccion() {
-    if (!DB.colegios.length) { S.colegioId = ''; S.cursoId = ''; return; }
+    if (!DB.colegios.length) { S.colegioId = ''; S.cursoId = ''; S.taller = ''; return; }
     if (!S.colegioId || !LOGIC.colegio(DB, S.colegioId)) S.colegioId = DB.colegios[0].id;
     const cursos = LOGIC.cursosDeColegio(DB, S.colegioId);
     if (!S.cursoId || !cursos.some(k => k.id === S.cursoId)) S.cursoId = cursos.length ? cursos[0].id : '';
+    if (!S.taller) S.taller = ultimoTaller(S.colegioId);
     const asig = LOGIC.profesoresDeColegio(DB, S.colegioId);
     if (!S.profesorId || !asig.some(p => p.id === S.profesorId)) S.profesorId = asig.length ? asig[0].id : (DB.profesores[0] || {}).id || '';
   }
 
   function cargarSesion() {
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
-    const ses = LOGIC.sesionDe(DB, S.cursoId, S.fecha);
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
+    const ses = S.taller ? LOGIC.sesionDe(DB, S.colegioId, S.taller, S.fecha) : null;
     S.editando = ses;
     S.filas = {};
     S.obsAbierta = {};
@@ -222,9 +240,9 @@
             '<div class="field"><label for="f-col">Colegio</label>' +
               '<select id="f-col">' + opcionesColegio() + '</select>' +
               '<span class="hint">' + DB.colegios.length + ' establecimientos</span></div>' +
-            '<div class="field"><label for="f-cur">Curso</label>' +
-              '<select id="f-cur">' + opcionesCurso() + '</select>' +
-              '<span class="hint">Define la lista del curso</span></div>' +
+            '<div class="field"><label for="f-taller">Taller</label>' +
+              '<select id="f-taller">' + opcionesTaller() + '</select>' +
+              '<span class="hint">El taller que se dictó</span></div>' +
             '<div class="field"><label for="f-prof">Profesor</label>' +
               '<select id="f-prof">' + opcionesProfesor() + '</select>' +
               '<span class="hint">Quien dictó la clase</span></div>' +
@@ -233,7 +251,7 @@
         '</div>' +
       '</div>' +
       '<div class="card">' +
-        '<div class="card-head"><h2><span class="step">2</span>Asistencia y evaluación del curso</h2>' +
+        '<div class="card-head"><h2><span class="step">2</span>Asistencia y evaluación de la clase</h2>' +
           '<label class="hint" style="margin-left:auto;display:flex;gap:8px;align-items:center;cursor:pointer">' +
             '<input type="checkbox" id="chk-susp" ' + (S.realizada ? '' : 'checked') + '> Clase no realizada' +
           '</label></div>' +
@@ -255,14 +273,15 @@
       S.colegioId = e.target.value;
       const cursos = LOGIC.cursosDeColegio(DB, S.colegioId);
       S.cursoId = cursos.length ? cursos[0].id : '';
+      S.taller = ultimoTaller(S.colegioId);
       const asig = LOGIC.profesoresDeColegio(DB, S.colegioId);
       S.profesorId = asig.length ? asig[0].id : S.profesorId;
-      $('#f-cur').innerHTML = opcionesCurso();
+      $('#f-taller').innerHTML = opcionesTaller();
       $('#f-prof').innerHTML = opcionesProfesor();
       cargarSesion(); pintarCtx(); pintarCurso();
     });
-    $('#f-cur').addEventListener('change', e => {
-      S.cursoId = e.target.value;
+    $('#f-taller').addEventListener('change', e => {
+      S.taller = e.target.value;
       cargarSesion(); pintarCtx(); pintarCurso();
     });
     $('#f-prof').addEventListener('change', e => {
@@ -289,15 +308,19 @@
     const cont = $('#ctx');
     if (!cont) return;
     const col = LOGIC.colegio(DB, S.colegioId);
-    const cur = LOGIC.curso(DB, S.cursoId);
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
     let h = '<div class="row-flex" style="gap:8px">';
     if (col) {
       h += '<span class="pill low">' + esc(col.nombre) + '</span>';
-      if (cur) h += '<span class="pill low">' + esc(cur.nombre) + '</span>';
+      if (S.taller) h += '<span class="pill low">Taller ' + esc(S.taller) + '</span>';
       h += '<span class="pill low">' + ests.length + ' estudiantes</span>';
     }
     h += '</div>';
+
+    if (!S.taller) {
+      h += '<div class="banner info" style="margin-top:12px"><span class="ic">i</span><div>' +
+        'Elige el <strong>taller</strong> para empezar a registrar la clase.</div></div>';
+    }
 
     if (S.ultimo) {
       h += '<div class="banner ok" style="margin-top:12px"><span class="ic">✓</span><div><strong>' + esc(S.ultimo) +
@@ -359,10 +382,15 @@
       return;
     }
 
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
     const col = LOGIC.colegio(DB, S.colegioId);
-    const cur = LOGIC.curso(DB, S.cursoId);
     const prof = LOGIC.profesor(DB, S.profesorId);
+    if (!S.taller) {
+      cont.innerHTML = '<div class="empty"><div class="big">◷</div>Elige el taller para ver la lista de estudiantes.' +
+        '<br><span class="small">Está arriba, junto al colegio.</span></div>';
+      foot.innerHTML = '';
+      return;
+    }
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
     if (!ests.length) {
       cont.innerHTML = '<div class="empty"><div class="big">☺</div>No hay estudiantes para mostrar.<br><span class="small">Agrégalos en la sección Estudiantes.</span></div>';
       foot.innerHTML = '';
@@ -371,7 +399,7 @@
 
     cont.innerHTML =
       '<div class="course-bar">' +
-        '<div class="who">' + esc(col.nombre) + (cur ? '<span class="curso-tag">' + esc(cur.nombre) + '</span>' : '') +
+        '<div class="who">' + esc(col.nombre) + '<span class="curso-tag">Taller ' + esc(S.taller) + '</span>' +
         '<small>' + esc(LOGIC.fmtLarga(S.fecha)) + (prof ? ' · ' + esc(prof.nombre) : '') + '</small></div>' +
         '<span class="spacer"></span>' +
         '<input type="search" id="buscar" placeholder="Buscar estudiante…" style="max-width:180px;min-height:38px;padding:8px 10px" value="' + esc(S.busqueda) + '">' +
@@ -525,7 +553,7 @@
   }
 
   function visibles() {
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
     const q = (S.busqueda || '').trim().toLowerCase();
     if (!q) return ests;
     return ests.filter(e => e.nombre.toLowerCase().indexOf(q) >= 0);
@@ -629,7 +657,7 @@
   }
 
   function resumenFilas() {
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
     let p = 0, a = 0, listos = 0, sinEval = 0, sinMarcar = 0, sinNota = 0;
     ests.forEach(e => {
       const f = S.filas[e.id] || {};
@@ -666,10 +694,11 @@
       toast('Esta clase está fuera del plazo de corrección (' + diasEdicion() + ' días).', 'err');
       return;
     }
-    const ests = LOGIC.estudiantesDeCurso(DB, S.cursoId);
+    const ests = LOGIC.estudiantesDeColegio(DB, S.colegioId);
     const payload = {
-      id: 's-' + S.cursoId + '-' + S.fecha,
-      fecha: S.fecha, colegioId: S.colegioId, cursoId: S.cursoId, profesorId: S.profesorId,
+      id: 's-' + S.colegioId + '-' + S.taller + '-' + S.fecha,
+      fecha: S.fecha, colegioId: S.colegioId, cursoId: S.cursoId, taller: S.taller,
+      profesorId: S.profesorId,
       realizada: S.realizada, motivo: S.motivo,
       filas: ests.map(e => {
         const f = S.filas[e.id] || {};
@@ -695,7 +724,7 @@
     if (!subido) { pintarCtx(); pintarCurso(); return; }
     if (res.sesion.realizada) {
       const r = resumenFilas();
-      const k = LOGIC.indicadores(DB, { desde: S.fecha, hasta: S.fecha, cursoId: S.cursoId });
+      const k = LOGIC.indicadores(DB, { desde: S.fecha, hasta: S.fecha, colegioId: S.colegioId, taller: S.taller });
       S.ultimo = 'Registro guardado: ' + r.presentes + (r.presentes === 1 ? ' presente' : ' presentes') +
         ' y ' + r.ausentes + (r.ausentes === 1 ? ' ausente' : ' ausentes') +
         (k.promedio !== null ? ' · promedio ' + LOGIC.num(k.promedio, 1) : '') + '.';
@@ -715,31 +744,18 @@
       '<div class="val">' + val + '</div><div class="sub">' + (sub || '') + '</div></div>';
   }
 
-  function opcionesCursoFiltro(colegioId, seleccionado) {
-    const cursos = (DB.cursos || []).filter(k => !colegioId || k.colegioId === colegioId);
-    if (!colegioId) {
-      const porColegio = {};
-      cursos.forEach(k => {
-        const c = LOGIC.colegio(DB, k.colegioId);
-        const n = c ? c.nombre : 'Sin colegio';
-        (porColegio[n] = porColegio[n] || []).push(k);
-      });
-      return Object.keys(porColegio).sort().map(n =>
-        '<optgroup label="' + esc(n) + '">' + porColegio[n].map(k =>
-          '<option value="' + k.id + '"' + (k.id === seleccionado ? ' selected' : '') + '>' + esc(k.nombre) + '</option>').join('') +
-        '</optgroup>').join('');
-    }
-    return cursos.map(k =>
-      '<option value="' + k.id + '"' + (k.id === seleccionado ? ' selected' : '') + '>' + esc(k.nombre) + '</option>').join('');
+  function opcionesTallerFiltro(seleccionado) {
+    return listaTalleres().map(function (t) {
+      return '<option value="' + esc(t) + '"' + (t === seleccionado ? ' selected' : '') + '>' + esc(t) + '</option>';
+    }).join('');
   }
 
   function renderPanel() {
     const P = V.panel;
     const fr = rangoFechas(P.rango);
-    const opts = { desde: fr.desde, hasta: fr.hasta, colegioId: P.colegio || undefined, cursoId: P.curso || undefined };
+    const opts = { desde: fr.desde, hasta: fr.hasta, colegioId: P.colegio || undefined, taller: P.taller || undefined };
     const k = LOGIC.indicadores(DB, opts);
     const cols = LOGIC.porColegio(DB, opts);
-    const curs = LOGIC.porCurso(DB, opts);
     const profs = LOGIC.porProfesor(DB, opts);
     const serie = LOGIC.serieSemanal(DB, opts);
     const als = LOGIC.alertas(DB, opts);
@@ -755,8 +771,8 @@
         '<div class="field"><label for="p-col">Colegio</label><select id="p-col"><option value="">Todos</option>' +
           DB.colegios.map(c => '<option value="' + c.id + '"' + (P.colegio === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') +
         '</select></div>' +
-        '<div class="field"><label for="p-cur">Curso</label><select id="p-cur"><option value="">Todos</option>' +
-          opcionesCursoFiltro(P.colegio, P.curso) + '</select></div>' +
+        '<div class="field"><label for="p-taller">Taller</label><select id="p-taller"><option value="">Todos</option>' +
+          opcionesTallerFiltro(P.taller) + '</select></div>' +
         '<span class="spacer"></span>' +
         '<button class="btn" id="p-xlsx">⤓ Descargar Excel</button>' +
       '</div>' +
@@ -764,7 +780,7 @@
       '<div class="kpis">' +
         kpi('Asistencia', pct(k.asistencia), k.presentes + ' de ' + k.registros + ' registros', k.asistencia !== null && k.asistencia < 0.8 ? 'bad' : 'good') +
         kpi('Nivel 1-3', k.promedio !== null ? LOGIC.num(k.promedio, 1) : 's/d', k.conNota + ' registros con nota', '') +
-        kpi('Sesiones', k.sesiones, 'en ' + curs.length + ' cursos', '') +
+        kpi('Sesiones', k.sesiones, 'en ' + cols.length + ' colegios', '') +
         kpi('Estudiantes', k.estudiantes, 'con al menos una clase', '') +
         kpi('En seguimiento', als.length, 'señales de alerta', als.length ? 'bad' : 'good') +
       '</div>' +
@@ -779,8 +795,8 @@
       '<div class="charts">' +
         '<div class="chart-card"><h3>Distribución de la evaluación</h3><p class="desc">' + k.registros + ' registros en el periodo.</p>' +
           distribucionHTML(k) + '</div>' +
-        '<div class="chart-card"><h3>Asistencia por curso</h3><p class="desc">Cada curso tiene sus propias clases.</p>' +
-          tablaCursos(curs) + '</div>' +
+        '<div class="chart-card"><h3>Asistencia por colegio</h3><p class="desc">Solo se consideran las clases registradas.</p>' +
+          tablaColegios(cols) + '</div>' +
       '</div>' +
 
       '<div class="card"><div class="card-head"><h2>Estudiantes que requieren atención</h2>' +
@@ -795,11 +811,11 @@
         '<div class="card-body" style="padding:0">' + tablaProfes(profs) + '</div></div>';
 
     $('#p-rango').addEventListener('change', e => { P.rango = e.target.value; renderPanel(); });
-    $('#p-col').addEventListener('change', e => { P.colegio = e.target.value; P.curso = ''; renderPanel(); });
-    $('#p-cur').addEventListener('change', e => { P.curso = e.target.value; renderPanel(); });
-    $('#p-xlsx').addEventListener('click', () => exportar(opts, nombreArchivo('Informe', P.colegio, P.curso)));
+    $('#p-col').addEventListener('change', e => { P.colegio = e.target.value; renderPanel(); });
+    $('#p-taller').addEventListener('change', e => { P.taller = e.target.value; renderPanel(); });
+    $('#p-xlsx').addEventListener('click', () => exportar(opts, nombreArchivo('Informe', P.colegio, '')));
     $('#p-ver-obs').addEventListener('click', () => {
-      V.info.colegio = P.colegio; V.info.curso = P.curso; V.info.rango = P.rango; ir('informes');
+      V.info.colegio = P.colegio; V.info.taller = P.taller; V.info.rango = P.rango; ir('informes');
     });
     cont.querySelectorAll('[data-est]').forEach(tr => tr.addEventListener('click', () => modalEstudiante(tr.dataset.est)));
   }
@@ -824,6 +840,20 @@
       curs.map(c => {
         const v = c.asistencia || 0;
         return '<tr><td><strong>' + esc(c.curso.nombre) + '</strong><div class="small">' + esc(c.colegio ? c.colegio.nombre : '') + '</div></td>' +
+          '<td><div class="bar-cell"><span class="track"><span class="fill" style="width:' + Math.round(v * 100) + '%;background:' +
+          (v < 0.8 ? '#B42318' : '#2F6F4E') + '"></span></span><span class="v">' + pct(c.asistencia) + '</span></div></td>' +
+          '<td class="mono">' + (c.promedio === null ? '—' : LOGIC.num(c.promedio, 1)) + '</td>' +
+          '<td class="mono">' + c.sesiones + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function tablaColegios(cols) {
+    if (!cols.length) return '<div class="empty">Sin registros en el periodo.</div>';
+    return '<table class="tbl"><thead><tr><th>Colegio</th><th>Asistencia</th><th>Nivel</th><th>Clases</th></tr></thead><tbody>' +
+      cols.map(c => {
+        const v = c.asistencia || 0;
+        return '<tr><td><strong>' + esc(c.colegio.nombre) + '</strong><div class="small">' +
+          (c.cursos ? c.cursos + ' taller(es)' : '') + '</div></td>' +
           '<td><div class="bar-cell"><span class="track"><span class="fill" style="width:' + Math.round(v * 100) + '%;background:' +
           (v < 0.8 ? '#B42318' : '#2F6F4E') + '"></span></span><span class="v">' + pct(c.asistencia) + '</span></div></td>' +
           '<td class="mono">' + (c.promedio === null ? '—' : LOGIC.num(c.promedio, 1)) + '</td>' +
@@ -926,16 +956,14 @@
         '<div class="field"><label for="e-col">Colegio</label><select id="e-col">' +
           DB.colegios.map(c => '<option value="' + c.id + '"' + (c.id === cid ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') +
         '</select></div>' +
-        '<div class="field"><label for="e-cur">Curso</label><select id="e-cur"><option value="">Todos</option>' +
-          cursos.map(k => '<option value="' + k.id + '"' + (V.estu.curso === k.id ? ' selected' : '') + '>' + esc(k.nombre) + '</option>').join('') +
-        '</select></div>' +
+
         '<span class="spacer"></span>' +
         '<button class="btn btn-primary" id="e-add">+ Agregar estudiante</button>' +
       '</div>' +
       '<div class="card"><div class="card-head"><h2>' + esc(col ? col.nombre : '') + '</h2>' +
         '<span class="hint">' + lista.length + (lista.length === 1 ? ' estudiante' : ' estudiantes') + ' en la lista</span></div>' +
         '<div class="card-body" style="padding:0">' +
-        (lista.length ? '<table class="tbl"><thead><tr><th>Estudiante</th><th>Curso</th>' +
+        (lista.length ? '<table class="tbl"><thead><tr><th>Estudiante</th>' +
           '<th>Asistencia</th><th class="hide-sm">Nivel</th><th class="hide-sm">Obs.</th><th></th></tr></thead><tbody>' +
           lista.map(e => {
             const regs = DB.registros.filter(r => r.estudianteId === e.id && DB.sesiones.some(s => s.id === r.sesionId && s.fecha >= fr.desde));
@@ -945,8 +973,7 @@
             const nobs = regs.filter(r => r.observacion && r.observacion.trim()).length;
             const cur = LOGIC.curso(DB, e.cursoId);
             return '<tr><td><strong>' + esc(e.nombre) + '</strong></td>' +
-              '<td class="small">' + esc(cur ? cur.nombre : '—') + '</td>' +
-              '<td><div class="bar-cell"><span class="track"><span class="fill" style="width:' + Math.round((tasa || 0) * 100) + '%;background:' +
+                  '<td><div class="bar-cell"><span class="track"><span class="fill" style="width:' + Math.round((tasa || 0) * 100) + '%;background:' +
               ((tasa || 0) < 0.7 ? '#B42318' : '#2F6F4E') + '"></span></span><span class="v">' + (tasa === null ? '—' : pct(tasa)) + '</span></div></td>' +
               '<td class="mono hide-sm">' + (evs.length ? LOGIC.num(evs.reduce((a, r) => a + r.evaluacion, 0) / evs.length, 1) : '—') + '</td>' +
               '<td class="mono hide-sm">' + nobs + '</td>' +
@@ -959,7 +986,6 @@
         '</div></div>';
 
     $('#e-col').addEventListener('change', e => { V.estu.colegio = e.target.value; V.estu.curso = ''; renderEstudiantes(); });
-    $('#e-cur').addEventListener('change', e => { V.estu.curso = e.target.value; renderEstudiantes(); });
     $('#e-add').addEventListener('click', () => modalEditarEstudiante(null));
     cont.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => modalEditarEstudiante(b.dataset.edit)));
     cont.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => modalEstudiante(b.dataset.ver)));
@@ -1065,7 +1091,7 @@
         regs.slice(0, 14).map(x => {
           const kk = LOGIC.curso(DB, x.s.cursoId);
           return '<tr><td class="small">' + esc(LOGIC.fmtFecha(x.s.fecha)) + '</td>' +
-            '<td class="small">' + esc(kk ? kk.nombre : '') + '</td>' +
+            '<td class="small">' + esc(x.s.taller ? 'Taller ' + x.s.taller : (kk ? kk.nombre : '')) + '</td>' +
             '<td><span class="pill ' + (x.r.asistencia === 'P' ? 'ok' : 'hi') + '">' + x.r.asistencia + '</span></td>' +
             '<td class="mono">' + x.r.evaluacion + '</td>' +
             '<td class="small">' + esc(x.r.observacion || '') + '</td></tr>';
@@ -1083,12 +1109,12 @@
     const fr = rangoFechas(I.rango);
     const opts = {
       desde: fr.desde, hasta: fr.hasta,
-      colegioId: I.colegio || undefined, cursoId: I.curso || undefined,
+      colegioId: I.colegio || undefined, taller: I.taller || undefined,
       etiqueta: I.etiqueta || undefined,
     };
     const k = LOGIC.indicadores(DB, opts);
     const obs = LOGIC.observaciones(DB, opts);
-    const borrador = LOGIC.borradorInforme(DB, { desde: fr.desde, hasta: fr.hasta, colegioId: I.colegio || undefined, cursoId: I.curso || undefined });
+    const borrador = LOGIC.borradorInforme(DB, { desde: fr.desde, hasta: fr.hasta, colegioId: I.colegio || undefined, taller: I.taller || undefined });
 
     const cont = $('#view-informes');
     cont.innerHTML =
@@ -1103,8 +1129,8 @@
             '<div class="field"><label for="i-col">Colegio</label><select id="i-col"><option value="">Todos</option>' +
               DB.colegios.map(c => '<option value="' + c.id + '"' + (I.colegio === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') +
             '</select></div>' +
-            '<div class="field"><label for="i-cur">Curso</label><select id="i-cur"><option value="">Todos</option>' +
-              opcionesCursoFiltro(I.colegio, I.curso) + '</select></div>' +
+            '<div class="field"><label for="i-taller">Taller</label><select id="i-taller"><option value="">Todos</option>' +
+              opcionesTallerFiltro(I.taller) + '</select></div>' +
             '<div class="field"><label for="i-eti">Etiqueta</label><select id="i-eti"><option value="">Todas</option>' +
               DB.etiquetas.map(t => '<option' + (I.etiqueta === t ? ' selected' : '') + '>' + esc(t) + '</option>').join('') +
             '</select></div>' +
@@ -1138,12 +1164,12 @@
           : '<div class="empty">No hay observaciones en este filtro.</div>') + '</div></div>';
 
     $('#i-rango').addEventListener('change', e => { I.rango = e.target.value; renderInformes(); });
-    $('#i-col').addEventListener('change', e => { I.colegio = e.target.value; I.curso = ''; renderInformes(); });
-    $('#i-cur').addEventListener('change', e => { I.curso = e.target.value; renderInformes(); });
+    $('#i-col').addEventListener('change', e => { I.colegio = e.target.value; renderInformes(); });
+    $('#i-taller').addEventListener('change', e => { I.taller = e.target.value; renderInformes(); });
     $('#i-eti').addEventListener('change', e => { I.etiqueta = e.target.value; renderInformes(); });
-    $('#i-xlsx').addEventListener('click', () => exportar(opts, nombreArchivo('Informe', I.colegio, I.curso)));
-    $('#i-csv').addEventListener('click', () => descargarTexto(csvObservaciones(obs), nombreArchivo('Observaciones', I.colegio, I.curso).replace('.xlsx', '.csv'), 'text/csv'));
-    $('#i-txt').addEventListener('click', () => descargarTexto(borrador, nombreArchivo('Informe', I.colegio, I.curso).replace('.xlsx', '.txt'), 'text/plain'));
+    $('#i-xlsx').addEventListener('click', () => exportar(opts, nombreArchivo('Informe', I.colegio, '')));
+    $('#i-csv').addEventListener('click', () => descargarTexto(csvObservaciones(obs), nombreArchivo('Observaciones', I.colegio, '').replace('.xlsx', '.csv'), 'text/csv'));
+    $('#i-txt').addEventListener('click', () => descargarTexto(borrador, nombreArchivo('Informe', I.colegio, '').replace('.xlsx', '.txt'), 'text/plain'));
     $('#i-copiar').addEventListener('click', () => {
       navigator.clipboard.writeText(borrador).then(
         () => toast('Borrador copiado al portapapeles', 'ok'),

@@ -243,7 +243,7 @@
       ws.freeze(4, 1);
       ws.merge(row, 0, row, 8);
       ws.set(row, 0, 'Cada celda muestra la asistencia y el valor registrado: "P · 3" es presente con nivel 3; ' +
-        '"P · 0" es presente sin nota; "A" es ausente (sin nota). Cada curso tiene su propio bloque porque las fechas de clase son distintas.', 'note');
+        '"P · 0" es presente sin nota; "A" es ausente (sin nota). Cada columna indica la fecha y el taller de esa clase.', 'note');
     });
 
     /* ------------------------ Registro plano ------------------------ */

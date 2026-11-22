@@ -30,9 +30,10 @@ Doble clic en **`Sistema-Asistencia.html`**.
 
 | Regla | Cómo funciona |
 |---|---|
-| Unidad de registro | La clase de un **curso** en una fecha. Un colegio puede tener varios cursos. |
+| Unidad de registro | La clase de un **colegio + taller + fecha**. El taller se elige de una lista fija (9.1 a 14.2). |
 | Duplicados | No se puede repetir la clase de un curso en la misma fecha: reenviar actualiza. |
 | Asistencia | Obligatoria para todos: P (presente) o A (ausente). |
+| Taller | Cada clase se etiqueta con el taller dictado. La lista de estudiantes es la del colegio. |
 | Evaluación | Obligatoria siempre, escala 0-3. El **0 = sin nota** (no hubo evaluación); 1, 2 y 3 son los niveles de logro. El promedio se calcula solo con 1-3. |
 | Observación | Opcional, texto libre, con etiquetas opcionales para agrupar. |
 | Clase no realizada | Se registra con motivo; no cuenta como ausencia de nadie. |

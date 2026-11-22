@@ -107,9 +107,11 @@
     return (db.estudiantes || []).filter(function (e) { return e.colegioId === colegioId; }).sort(cmpNombre);
   }
 
-  /** La clase de un curso en una fecha (a lo más una). */
-  function sesionDe(db, cursoId, fecha) {
-    return (db.sesiones || []).find(function (s) { return s.cursoId === cursoId && s.fecha === fecha; }) || null;
+  /** La clase de un colegio y taller en una fecha (a lo más una). */
+  function sesionDe(db, colegioId, taller, fecha) {
+    return (db.sesiones || []).find(function (s) {
+      return s.colegioId === colegioId && (s.taller || '') === (taller || '') && s.fecha === fecha;
+    }) || null;
   }
   function registrosDeSesion(db, sesionId) {
     return (db.registros || []).filter(function (r) { return r.sesionId === sesionId; });
@@ -127,6 +129,7 @@
       if (s.fecha < desde || s.fecha > hasta) return false;
       if (opts.colegioId && s.colegioId !== opts.colegioId) return false;
       if (opts.cursoId && s.cursoId !== opts.cursoId) return false;
+      if (opts.taller && (s.taller || '') !== opts.taller) return false;
       if (opts.profesorId && s.profesorId !== opts.profesorId) return false;
       if (opts.soloRealizadas !== false && !s.realizada) return false;
       return true;
@@ -333,7 +336,7 @@
     const filas = payload.filas || [];
     if (!payload.fecha) errores.push('Falta la fecha de la clase.');
     if (!payload.colegioId) errores.push('Falta seleccionar el colegio.');
-    if (!payload.cursoId) errores.push('Falta seleccionar el curso.');
+    if (!payload.taller) errores.push('Falta seleccionar el taller.');
     if (!payload.profesorId) errores.push('Falta seleccionar el profesor.');
     if (payload.realizada !== false) {
       if (!filas.length) errores.push('El curso no tiene estudiantes.');
@@ -356,7 +359,7 @@
    */
   function guardarSesion(db, payload) {
     const fecha = payload.fecha;
-    let sesion = sesionDe(db, payload.cursoId, fecha);
+    let sesion = sesionDe(db, payload.colegioId, payload.taller, fecha);
     const ahora = ahoraLocal();
     let nuevo = false;
 
@@ -366,7 +369,8 @@
         id: payload.id || ('s' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
         fecha: fecha,
         colegioId: payload.colegioId,
-        cursoId: payload.cursoId,
+        cursoId: payload.cursoId || '',
+        taller: payload.taller || '',
         profesorId: payload.profesorId,
         realizada: payload.realizada !== false,
         motivo: payload.motivo || '',
@@ -377,6 +381,7 @@
       db.sesiones.push(sesion);
     } else {
       sesion.colegioId = payload.colegioId;
+      sesion.taller = payload.taller || '';
       sesion.profesorId = payload.profesorId;
       sesion.realizada = payload.realizada !== false;
       sesion.motivo = payload.motivo || '';

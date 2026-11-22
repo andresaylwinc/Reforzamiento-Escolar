@@ -154,7 +154,7 @@
   function aCamelClase(c) {
     return {
       id: c.id, fecha: c.fecha, colegioId: c.colegio_id, cursoId: c.curso_id,
-      profesorId: c.profesor_id, realizada: c.realizada, motivo: c.motivo || '',
+      profesorId: c.profesor_id, taller: c.taller || '', realizada: c.realizada, motivo: c.motivo || '',
       registradoPor: c.registrado_por, creadoEn: c.creado_en, actualizadoEn: c.actualizado_en,
     };
   }
@@ -222,7 +222,8 @@
       id: datos.id,
       fecha: datos.fecha,
       colegio_id: datos.colegioId,
-      curso_id: datos.cursoId,
+      curso_id: datos.cursoId || null,
+      taller: datos.taller || '',
       profesor_id: datos.profesorId,
       realizada: datos.realizada,
       motivo: datos.motivo || '',

@@ -81,6 +81,9 @@ check('entra y muestra el sistema', await ev('document.querySelectorAll(".view.o
 check('carga los colegios de la base', await ev('window.__app.DB().colegios.length') === 2, await ev('window.__app.DB().colegios.length'));
 check('muestra el nombre del usuario', (await txt('.userbox')).indexOf('Líder') >= 0, await txt('.userbox'));
 
+await ev(`(function(){ const s = document.querySelector('#f-taller'); s.value = '9.1'; s.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
+await sleep(500);
+
 console.log('== Registro de una clase desde la base ==');
 check('lista los estudiantes del curso', await ev('document.querySelectorAll("#rows .row").length') === 2,
   await ev('document.querySelectorAll("#rows .row").length'));

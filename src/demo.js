@@ -102,6 +102,9 @@
   // Día de la semana de cada curso: 1 = lunes ... 5 = viernes
   const DIAS = { k1: 2, k2: 4, k3: 3, k4: 4, k5: 1, k6: 5, k7: 5, k8: 2 };
 
+  // Taller de ejemplo para cada curso
+  const TALLER_DEMO = { k1: '9.1', k2: '9.2', k3: '10.1', k4: '10.2', k5: '11.1', k6: '11.2', k7: '12.1', k8: '12.2' };
+
   const ASISTENCIA_BAJA = [4, 12, 41];
   const RETROCESO = [18, 36];
   const SUSPENDIDAS = { k2: 1, k7: 3 };
@@ -188,7 +191,8 @@
         const suspendida = SUSPENDIDAS[cur.id] === idx;
         const profId = profs[idx % profs.length];
         db.sesiones.push({
-          id: sid, fecha: iso(fecha), colegioId: cur.colegioId, cursoId: cur.id, profesorId: profId,
+          id: sid, fecha: iso(fecha), colegioId: cur.colegioId, cursoId: cur.id,
+          taller: TALLER_DEMO[cur.id] || '', profesorId: profId,
           realizada: !suspendida,
           motivo: suspendida ? (idx === 1 ? 'Clase suspendida: actividad del colegio' : 'Profesor con licencia médica') : '',
           registradoPor: profId,

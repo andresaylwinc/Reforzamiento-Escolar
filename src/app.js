@@ -141,8 +141,8 @@
       '<option value="' + c.id + '"' + (c.id === S.colegioId ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('');
   }
 
-  // Talleres disponibles: 9.1 a 14.2, más cualquiera ya registrado antes.
-  const TALLERES = ['9.1', '9.2', '10.1', '10.2', '11.1', '11.2',
+  // Talleres disponibles: 8.1 a 14.2, más cualquiera ya registrado antes.
+  const TALLERES = ['8.1', '8.2', '9.1', '9.2', '10.1', '10.2', '11.1', '11.2',
     '12.1', '12.2', '13.1', '13.2', '14.1', '14.2'];
 
   function listaTalleres() {

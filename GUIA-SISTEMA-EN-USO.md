@@ -141,7 +141,7 @@ Desde ese momento, lo que registre cada profesor aparece en tu panel al instante
 
 **El profesor**
 1. Abre el enlace en el celular y entra.
-2. Elige fecha, colegio, **taller** (9.1 a 14.2) y confirma quién dictó la clase. La lista de estudiantes es la del colegio.
+2. Elige fecha, colegio, **taller** (8.1 a 14.2) y confirma quién dictó la clase. La lista de estudiantes es la del colegio.
 3. Marca P/A, registra la evaluación (0 = sin nota) y agrega observaciones si corresponde.
 4. **Enviar registro**.
 

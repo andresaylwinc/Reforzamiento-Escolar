@@ -30,7 +30,7 @@ Doble clic en **`Sistema-Asistencia.html`**.
 
 | Regla | Cómo funciona |
 |---|---|
-| Unidad de registro | La clase de un **colegio + taller + fecha**. El taller se elige de una lista fija (9.1 a 14.2). |
+| Unidad de registro | La clase de un **colegio + taller + fecha**. El taller se elige de una lista fija (8.1 a 14.2). |
 | Duplicados | No se puede repetir la clase de un curso en la misma fecha: reenviar actualiza. |
 | Asistencia | Obligatoria para todos: P (presente) o A (ausente). |
 | Taller | Cada clase se etiqueta con el taller dictado. La lista de estudiantes es la del colegio. |

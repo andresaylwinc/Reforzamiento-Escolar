@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PLANTILLA: Volante A4 · frente  (794 x 1123 px)
+  PALETA: institucional
+  Capas (de abajo hacia arriba): 01 FONDO · 02 FORMAS · 03 FOTO · 04 SOBRE FOTO · 05 TEXTOS · 06 DATOS · 07 LEGAL · 08 GUÍAS
+  Para recolorear: edita el bloque <style> (clases .c-tinta, .c-azul, .c-acento...).
+  Para cambiar la foto: reemplaza el archivo assets/foto-candidato.jpg.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="794" height="1123" viewBox="0 0 794 1123"
+     version="1.1">
+  <title>Volante A4 · frente</title>
+  <desc>Volante para imprenta (210 x 297 mm)</desc>
+  <style>
+  .c-tinta{fill:#0F1B26}
+  .c-azul{fill:#14405F}
+  .c-acento{fill:#E2542C}
+  .c-crema{fill:#F6F1E8}
+  .c-arena{fill:#E3D7C6}
+  .c-gris{fill:#6E7780}
+  .c-blanco{fill:#FFFFFF}
+  .f-display{font-family:'Arial Black','Segoe UI Black',Impact,sans-serif;font-weight:900}
+  .f-semi{font-family:'Segoe UI Semibold','Segoe UI',Arial,sans-serif;font-weight:600}
+  .f-body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-weight:400}
+  </style>
+  <g id="capa-01" inkscape:groupmode="layer" inkscape:label="01 FONDO">
+    <rect id="fondo-crema" inkscape:label="Fondo crema" x="0" y="0" width="794" height="1123" rx="0" fill="#F6F1E8"/>
+  </g>
+  <g id="capa-02" inkscape:groupmode="layer" inkscape:label="02 FORMAS">
+    <rect id="barra-superior" inkscape:label="Barra superior" x="0" y="0" width="794" height="14" rx="0" fill="#E2542C"/>
+    <rect id="barra-inferior" inkscape:label="Barra inferior" x="0" y="1109" width="794" height="14" rx="0" fill="#E2542C"/>
+    <rect id="regla-acento" inkscape:label="Regla acento" x="56" y="734" width="80" height="7" rx="0" fill="#E2542C"/>
+    <rect id="boton-cta" inkscape:label="Botón CTA" x="56" y="906" width="300" height="62" rx="31" fill="#0F1B26"/>
+  </g>
+  <g id="capa-03" inkscape:groupmode="layer" inkscape:label="03 FOTO">
+    <image x="0" y="96" width="794" height="470" preserveAspectRatio="xMidYMid slice" href="../assets/foto-candidato.jpg" xlink:href="../assets/foto-candidato.jpg" id="foto-del-candidato" inkscape:label="Foto del candidato"/>
+  </g>
+  <g id="capa-04" inkscape:groupmode="layer" inkscape:label="04 SOBRE FOTO">
+    <rect id="panel-de-nombre" inkscape:label="Panel de nombre" x="0" y="452" width="794" height="232" rx="0" fill="#0F1B26"/>
+    <circle id="sello" inkscape:label="Sello" cx="700" cy="596" r="72" fill="#E2542C"/>
+  </g>
+  <g id="capa-05" inkscape:groupmode="layer" inkscape:label="05 TEXTOS">
+    <text x="56" y="536" class="f-semi" font-size="18" letter-spacing="3.24" fill="#E2542C">CANDIDATURA A ALCALDE</text>
+    <text x="56" y="588" class="f-semi" font-size="34" letter-spacing="3.4" fill="#F6F1E8">NOMBRE</text>
+    <g id="apellido-titular" inkscape:label="Apellido (titular)">
+        <text x="56" y="668" class="f-display" font-size="78" letter-spacing="0.0" fill="#F6F1E8">APELLIDO</text>
+      </g>
+    <g id="lema" inkscape:label="Lema">
+        <text x="56" y="804.0" class="f-body" font-size="33" letter-spacing="0.0" fill="#0F1B26">POR UN BARRIO SEGURO, LIMPIO Y CON</text>
+        <text x="56" y="850.2" class="f-body" font-size="33" letter-spacing="0.0" fill="#0F1B26">OPORTUNIDADES</text>
+      </g>
+    <text x="206" y="944" class="f-semi" font-size="20" letter-spacing="3.2" fill="#F6F1E8" text-anchor="middle">CONÓCEME</text>
+  </g>
+  <g id="capa-06" inkscape:groupmode="layer" inkscape:label="06 DATOS">
+    <g id="logo-reemplazar" inkscape:label="Logo (reemplazar)"><rect x="48" y="36" width="140" height="40" rx="2" fill="none" stroke="#0F1B26" stroke-width="1.4" stroke-dasharray="7 5" opacity="0.55"/><text x="118.0" y="60.32" class="f-semi" font-size="12" letter-spacing="1.92" text-anchor="middle" fill="#0F1B26" opacity="0.7">TU LOGO</text></g>
+    <text x="746" y="62" class="f-semi" font-size="16" letter-spacing="2.88" fill="#14405F" text-anchor="end">ELECCIONES 2028</text>
+    <text x="700" y="613" class="f-display" font-size="30" letter-spacing="1.8" fill="#F6F1E8" text-anchor="middle">VOTA</text>
+    <text x="380" y="932" class="f-display" font-size="26" letter-spacing="1.04" fill="#14405F">26 DE OCTUBRE</text>
+    <text x="380" y="962" class="f-semi" font-size="16" letter-spacing="1.92" fill="#6E7780">@TUUSUARIO</text>
+  </g>
+  <g id="capa-07" inkscape:groupmode="layer" inkscape:label="07 LEGAL">
+    <g id="leyenda-legal" inkscape:label="Leyenda legal">
+        <text x="56" y="1052.0" class="f-semi" font-size="11" letter-spacing="0.0" fill="#6E7780">PROPAGANDA ELECTORAL · LEYENDA LEGAL OBLIGATORIA: [COMPLETAR SEGÚN NORMATIVA SERVEL]</text>
+      </g>
+  </g>
+  <g id="capa-08" inkscape:groupmode="layer" inkscape:label="08 GUÍAS" style="display:none">
+    <rect id="zona-segura" inkscape:label="Zona segura" x="30" y="30" width="734" height="1063" rx="0" fill="none" stroke="#E2542C" stroke-width="1" stroke-dasharray="8 6"/>
+    <text x="36" y="18" class="f-semi" font-size="11" letter-spacing="0.88" fill="#E2542C">ZONA SEGURA · margen 30px</text>
+  </g>
+</svg>

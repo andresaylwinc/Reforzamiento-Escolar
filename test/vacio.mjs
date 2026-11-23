@@ -93,7 +93,7 @@ check('aparece en la pantalla', (await txt('#view-ajustes')).indexOf('Colegio Nu
 await ev('(document.querySelector("[data-view=registrar]").click(), true)');
 await sleep(600);
 check('el registro ya ofrece el colegio', (await txt('#f-col')).indexOf('Colegio Nuevo') >= 0, await txt('#f-col'));
-check('y el selector de taller está disponible', await ev('document.querySelectorAll("#f-taller option").length') === 13, await ev('document.querySelectorAll("#f-taller option").length'));
+check('y el selector de taller está disponible', await ev('document.querySelectorAll("#f-taller option").length') === 15, await ev('document.querySelectorAll("#f-taller option").length'));
 
 console.log(logs.length ? 'EXCEPCIONES:\n' + logs.join('\n') : 'sin excepciones en la página');
 console.log('\nRESULTADO: ' + ok + ' ok, ' + fail + ' fallas');

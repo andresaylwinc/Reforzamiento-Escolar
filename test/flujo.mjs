@@ -82,7 +82,7 @@ async function main() {
   console.log('== Selección por taller ==');
   check('se ven los 9 estudiantes del colegio', await ev('document.querySelectorAll("#rows .row").length') === 9,
     await ev('document.querySelectorAll("#rows .row").length'));
-  check('el selector ofrece los 12 talleres', await ev('document.querySelectorAll("#f-taller option").length') === 13,
+  check('el selector ofrece los 14 talleres', await ev('document.querySelectorAll("#f-taller option").length') === 15,
     await ev('document.querySelectorAll("#f-taller option").length'));
   check('la clase arranca con un taller elegido', (await ev('document.querySelector("#f-taller").value')).length >= 3,
     await ev('document.querySelector("#f-taller").value'));
@@ -162,7 +162,7 @@ async function main() {
   check('tabla por colegio lista colegios', (await txt('#view-panel .charts .tbl')).indexOf('Colegio 1') >= 0);
   await ev(`(function(){ const s = document.querySelector('#p-col'); s.value = 'c1'; s.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
   await sleep(500);
-  check('el filtro de taller ofrece los 12', await ev('document.querySelectorAll("#p-taller option").length') === 13);
+  check('el filtro de taller ofrece los 14', await ev('document.querySelectorAll("#p-taller option").length') === 15);
 
   await ev('(document.querySelector("[data-view=estudiantes]").click(), true)');
   await sleep(500);

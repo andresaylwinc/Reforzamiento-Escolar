@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PLANTILLA: Volante A4 · reverso  (794 x 1123 px)
+  PALETA: institucional
+  Capas (de abajo hacia arriba): 01 FONDO · 02 FORMAS · 03 FOTO · 04 SOBRE FOTO · 05 TEXTOS · 06 DATOS · 07 LEGAL · 08 GUÍAS
+  Para recolorear: edita el bloque <style> (clases .c-tinta, .c-azul, .c-acento...).
+  Para cambiar la foto: reemplaza el archivo assets/foto-candidato.jpg.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="794" height="1123" viewBox="0 0 794 1123"
+     version="1.1">
+  <title>Volante A4 · reverso</title>
+  <desc>5 propuestas para los primeros 100 días</desc>
+  <style>
+  .c-tinta{fill:#0F1B26}
+  .c-azul{fill:#14405F}
+  .c-acento{fill:#E2542C}
+  .c-crema{fill:#F6F1E8}
+  .c-arena{fill:#E3D7C6}
+  .c-gris{fill:#6E7780}
+  .c-blanco{fill:#FFFFFF}
+  .f-display{font-family:'Arial Black','Segoe UI Black',Impact,sans-serif;font-weight:900}
+  .f-semi{font-family:'Segoe UI Semibold','Segoe UI',Arial,sans-serif;font-weight:600}
+  .f-body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-weight:400}
+  </style>
+  <g id="capa-01" inkscape:groupmode="layer" inkscape:label="01 FONDO">
+    <rect id="fondo-crema" inkscape:label="Fondo crema" x="0" y="0" width="794" height="1123" rx="0" fill="#F6F1E8"/>
+  </g>
+  <g id="capa-02" inkscape:groupmode="layer" inkscape:label="02 FORMAS">
+    <rect id="barra-superior" inkscape:label="Barra superior" x="0" y="0" width="794" height="14" rx="0" fill="#E2542C"/>
+    <rect id="pie" inkscape:label="Pie" x="0" y="1030" width="794" height="93" rx="0" fill="#0F1B26"/>
+    <rect id="regla-acento" inkscape:label="Regla acento" x="56" y="250" width="80" height="7" rx="0" fill="#E2542C"/>
+    <line x1="56" y1="414" x2="738" y2="414" stroke="#E3D7C6" stroke-width="1.5"/>
+    <line x1="56" y1="562" x2="738" y2="562" stroke="#E3D7C6" stroke-width="1.5"/>
+    <line x1="56" y1="710" x2="738" y2="710" stroke="#E3D7C6" stroke-width="1.5"/>
+    <line x1="56" y1="858" x2="738" y2="858" stroke="#E3D7C6" stroke-width="1.5"/>
+    <line x1="56" y1="1006" x2="738" y2="1006" stroke="#E3D7C6" stroke-width="1.5"/>
+  </g>
+  <g id="capa-05" inkscape:groupmode="layer" inkscape:label="05 TEXTOS">
+    <g id="titulo" inkscape:label="Título">
+        <text x="56" y="190" class="f-display" font-size="60" letter-spacing="0.0" fill="#0F1B26">5 PROPUESTAS</text>
+      </g>
+    <text x="56" y="356" class="f-display" font-size="76" letter-spacing="0.0" fill="#E2542C">1</text>
+    <text x="140" y="330" class="f-display" font-size="28" letter-spacing="0.0" fill="#0F1B26">SEGURIDAD DE BARRIO</text>
+    <text x="140" y="370.0" class="f-body" font-size="20" letter-spacing="0.0" fill="#6E7780">Patrullaje municipal nocturno y cámaras en los pasajes críticos.</text>
+    <text x="56" y="504" class="f-display" font-size="76" letter-spacing="0.0" fill="#E2542C">2</text>
+    <text x="140" y="478" class="f-display" font-size="28" letter-spacing="0.0" fill="#0F1B26">PLAZAS RECUPERADAS</text>
+    <text x="140" y="518.0" class="f-body" font-size="20" letter-spacing="0.0" fill="#6E7780">Remodelación de 6 plazas y 1.000 árboles nuevos.</text>
+    <text x="56" y="652" class="f-display" font-size="76" letter-spacing="0.0" fill="#E2542C">3</text>
+    <text x="140" y="626" class="f-display" font-size="28" letter-spacing="0.0" fill="#0F1B26">EMPLEO Y EMPRENDIMIENTO</text>
+    <text x="140" y="666.0" class="f-body" font-size="20" letter-spacing="0.0" fill="#6E7780">Oficina de empleo y feria mensual de emprendedores.</text>
+    <text x="56" y="800" class="f-display" font-size="76" letter-spacing="0.0" fill="#E2542C">4</text>
+    <text x="140" y="774" class="f-display" font-size="28" letter-spacing="0.0" fill="#0F1B26">ADULTOS MAYORES</text>
+    <text x="140" y="814.0" class="f-body" font-size="20" letter-spacing="0.0" fill="#6E7780">Centro diurno y transporte gratuito a trámites.</text>
+    <text x="56" y="948" class="f-display" font-size="76" letter-spacing="0.0" fill="#E2542C">5</text>
+    <text x="140" y="922" class="f-display" font-size="28" letter-spacing="0.0" fill="#0F1B26">TRANSPORTE LOCAL</text>
+    <text x="140" y="962.0" class="f-body" font-size="20" letter-spacing="0.0" fill="#6E7780">Nuevas paradas seguras y recorrido barrial nocturno.</text>
+  </g>
+  <g id="capa-06" inkscape:groupmode="layer" inkscape:label="06 DATOS">
+    <g id="logo-reemplazar" inkscape:label="Logo (reemplazar)"><rect x="48" y="36" width="140" height="40" rx="2" fill="none" stroke="#0F1B26" stroke-width="1.4" stroke-dasharray="7 5" opacity="0.55"/><text x="118.0" y="60.32" class="f-semi" font-size="12" letter-spacing="1.92" text-anchor="middle" fill="#0F1B26" opacity="0.7">TU LOGO</text></g>
+    <text x="746" y="62" class="f-semi" font-size="16" letter-spacing="2.88" fill="#14405F" text-anchor="end">PROPUESTAS</text>
+    <text x="56" y="226" class="f-semi" font-size="18" letter-spacing="2.16" fill="#6E7780">PARA LOS PRIMEROS 100 DÍAS DE GESTIÓN</text>
+    <text x="56" y="1082" class="f-display" font-size="24" letter-spacing="0.96" fill="#F6F1E8">VOTA · 26 DE OCTUBRE</text>
+    <text x="738" y="1078" class="f-semi" font-size="16" letter-spacing="1.92" fill="#E3D7C6" text-anchor="end">@TUUSUARIO</text>
+  </g>
+  <g id="capa-08" inkscape:groupmode="layer" inkscape:label="08 GUÍAS" style="display:none">
+    <rect id="zona-segura" inkscape:label="Zona segura" x="30" y="30" width="734" height="1063" rx="0" fill="none" stroke="#E2542C" stroke-width="1" stroke-dasharray="8 6"/>
+    <text x="36" y="18" class="f-semi" font-size="11" letter-spacing="0.88" fill="#E2542C">ZONA SEGURA · margen 30px</text>
+  </g>
+</svg>
